@@ -134,3 +134,12 @@ uptime, backup restore drill, role/project access decisions and failure/security
 matrix remain in `docs/STAGING-READINESS.md`. GitHub code integration can proceed
 independently; Azure deploy workflow will be added only after foundation outputs
 and GitHub environment/federated trust are configured and checked.
+
+The manual `provision` job initializes the dedicated `gateway_staging` database
+with the pinned USDC and Mock USDT Devnet accounts. Its explicit future-only
+opening balance policy records existing test funds in the initial-boundary audit;
+it does not create payments or ledger credit from them. Initialization refuses
+any invoice/payment-attempt history before creating a missing checkpoint, and
+reruns never move an existing checkpoint. The local Devnet CLI retains its
+zero-opening-balance default. Provision job credentials are `staging-project-id`
+and `staging-api-key` in Key Vault; never include them in deployment output.

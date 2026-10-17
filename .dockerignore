@@ -12,3 +12,11 @@ playwright-report
 
 .devnet/
 .env.devnet
+**/*.local.json
+**/*.parameters.json
+**/*.parameters.local.*
+.azure/
+**/*.pem
+**/*.key
+**/*.pfx
+**/*.p12

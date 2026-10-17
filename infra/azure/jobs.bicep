@@ -5,7 +5,7 @@ param environmentName string = '${prefix}-env'
 param registryName string
 param vaultName string
 param image string
-@allowed(['bootstrap', 'migrate'])
+@allowed(['bootstrap', 'migrate', 'provision'])
 param kind string
 resource environment 'Microsoft.App/managedEnvironments@2025-01-01' existing = { name: environmentName }
 resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = { name: registryName }
@@ -20,7 +20,14 @@ var secrets = kind == 'bootstrap'
       { name: 'database-migrator-password', env: 'MIGRATOR_PASSWORD' }
       { name: 'database-runtime-password', env: 'RUNTIME_PASSWORD' }
     ]
-  : [{ name: 'database-migration-url', env: 'DATABASE_URL' }]
+  : kind == 'provision'
+    ? [
+        { name: 'database-runtime-url', env: 'DATABASE_URL' }
+        { name: 'solana-devnet-rpc-url', env: 'SOLANA_RPC_URL' }
+        { name: 'staging-project-id', env: 'STAGING_PROJECT_ID' }
+        { name: 'staging-api-key', env: 'STAGING_API_KEY' }
+      ]
+    : [{ name: 'database-migration-url', env: 'DATABASE_URL' }]
 resource kvSecrets 'Microsoft.KeyVault/vaults/secrets@2023-07-01' existing = [
   for secret in secrets: { parent: vault, name: secret.name }
 ]
@@ -78,7 +85,11 @@ resource job 'Microsoft.App/jobs@2025-01-01' = {
         {
           name: kind
           image: image
-          command: kind == 'bootstrap' ? ['node', 'infra/azure/database-bootstrap.mjs'] : ['pnpm', 'db:migrate']
+          command: kind == 'bootstrap'
+            ? ['node', 'infra/azure/database-bootstrap.mjs']
+            : kind == 'provision'
+              ? ['pnpm', 'exec', 'tsx', 'infra/azure/provision-devnet.ts']
+              : ['pnpm', 'db:migrate']
           env: concat(
             [
               { name: 'APP_ENV', value: 'staging' }

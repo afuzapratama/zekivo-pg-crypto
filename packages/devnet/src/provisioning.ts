@@ -15,6 +15,7 @@ export async function provisionUsdc(
   projectId: string,
   apiKey: string,
   asset: "USDC" | "USDT" = "USDC",
+  openingBalancePolicy: "require-zero" | "record-future-only" = "require-zero",
 ) {
   const usdc = await new DevnetSetup(rpc).inspect();
   const mockMint = address(DEVNET_MOCK_USDT_MINT);
@@ -97,7 +98,16 @@ export async function provisionUsdc(
         "SELECT 1 FROM invoices WHERE asset=$1 UNION ALL SELECT 1 FROM payment_attempts WHERE asset=$1 LIMIT 1",
         [asset],
       );
-      if (invoices.rowCount || state.balance_units !== "0")
+      const anyHistory =
+        openingBalancePolicy === "record-future-only"
+          ? await client.query(
+              "SELECT 1 FROM invoices UNION ALL SELECT 1 FROM payment_attempts LIMIT 1",
+            )
+          : invoices;
+      if (
+        anyHistory.rowCount ||
+        (openingBalancePolicy === "require-zero" && state.balance_units !== "0")
+      )
         throw new Error(
           "Cannot establish first scan boundary after invoices or receiving funds exist",
         );
@@ -126,6 +136,8 @@ export async function provisionUsdc(
             genesis: state.genesis,
             slot: head,
             first_available_slot: first,
+            opening_balance_units: state.balance_units,
+            opening_balance_policy: openingBalancePolicy,
             policy: "future invoices only; no historical recovery claim",
           }),
         ],
