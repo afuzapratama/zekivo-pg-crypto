@@ -20,6 +20,7 @@ FROM base AS build
 RUN pnpm build && pnpm exec esbuild packages/monitoring/src/main.ts --bundle --platform=node --format=esm --packages=external --outfile=packages/monitoring/dist/main.js
 FROM node:24.11.1-bookworm-slim AS runtime
 WORKDIR /app
+RUN npm install --global pnpm@12.14.0
 ENV NODE_ENV=production
 COPY --from=build --chown=node:node /app /app
 USER node
