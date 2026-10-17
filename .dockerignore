@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/.next
+.git
+.env
+.env.*
+coverage
+
+test-results
+playwright-report
+**/*.tsbuildinfo
+
+.devnet/
+.env.devnet

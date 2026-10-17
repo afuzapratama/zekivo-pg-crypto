@@ -1,0 +1,12 @@
+{
+  "environment": "staging",
+  "cluster": "devnet",
+  "resourceGroup": "rg-zekivo-pg-staging",
+  "location": "southeastasia",
+  "repository": "git@github.com:afuzapratama/zekivo-pg-crypto.git",
+  "useAzureDefaultHttpsDomain": true,
+  "webhookDeliveryEnabled": false,
+  "monthlyBudgetUsd": 200,
+  "creditExpiryDate": null,
+  "creditExpiryMonth": "2027-07"
+}

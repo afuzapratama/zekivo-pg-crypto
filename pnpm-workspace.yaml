@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  sharp: true
+  vue-demi: false
+minimumReleaseAgeExclude:
+  - "@solana-program/system@0.16.0"
+  - "@solana-program/token@0.18.0"

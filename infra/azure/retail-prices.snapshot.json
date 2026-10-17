@@ -1,0 +1,161 @@
+{
+  "retrievedAt": "2026-10-17T12:02:25.643863+00:00",
+  "currency": "USD",
+  "source": "https://prices.azure.com/api/retail/prices",
+  "rates": [
+    {
+      "serviceName": "Azure Container Apps",
+      "productName": "Azure Container Apps",
+      "meterName": "Standard vCPU Active Usage",
+      "skuName": "Standard",
+      "armRegionName": "southeastasia",
+      "retailPrice": 3.4e-5,
+      "unitOfMeasure": "1 Second",
+      "meterId": "5345ba68-7e2a-5eac-b829-98a6329c2272",
+      "effectiveStartDate": "2022-06-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Azure Container Apps",
+      "productName": "Azure Container Apps",
+      "meterName": "Standard Memory Active Usage",
+      "skuName": "Standard",
+      "armRegionName": "southeastasia",
+      "retailPrice": 4e-6,
+      "unitOfMeasure": "1 GiB Second",
+      "meterId": "5d2b5080-8fa7-581a-b8ae-fec637063514",
+      "effectiveStartDate": "2022-06-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Azure Container Apps",
+      "productName": "Azure Container Apps",
+      "meterName": "Standard Requests",
+      "skuName": "Standard",
+      "armRegionName": "southeastasia",
+      "retailPrice": 0.4,
+      "unitOfMeasure": "1M",
+      "meterId": "bdb6456b-7218-5020-bde6-f3268dc3f6b2",
+      "effectiveStartDate": "2022-06-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Azure Database for PostgreSQL",
+      "productName": "Azure Database for PostgreSQL Flexible Server Burstable BS Series Compute",
+      "meterName": "B1MS",
+      "skuName": "B1MS",
+      "armRegionName": "southeastasia",
+      "retailPrice": 0.026,
+      "unitOfMeasure": "1 Hour",
+      "meterId": "caa13868-6d59-5b82-ae7a-765904be9712",
+      "effectiveStartDate": "2021-12-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Azure Database for PostgreSQL",
+      "productName": "Azure Database for PostgreSQL Flex Server Storage",
+      "meterName": "Storage Data Stored",
+      "skuName": "Storage",
+      "armRegionName": "southeastasia",
+      "retailPrice": 0.138,
+      "unitOfMeasure": "1 GB/Month",
+      "meterId": "3dc8bdb7-8a94-5ffe-8836-6e80a540f61f",
+      "effectiveStartDate": "2021-06-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Azure Database for PostgreSQL",
+      "productName": "Azure Database for PostgreSQL Flexible Server Backup Storage",
+      "meterName": "Backup Storage LRS Data Stored",
+      "skuName": "Backup Storage LRS",
+      "armRegionName": "southeastasia",
+      "retailPrice": 0.095,
+      "unitOfMeasure": "1 GB/Month",
+      "meterId": "8bc358f5-11c3-5b79-96f6-cb240df036e6",
+      "effectiveStartDate": "2021-06-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Container Registry",
+      "productName": "Container Registry",
+      "meterName": "Basic Registry Unit",
+      "skuName": "Basic",
+      "armRegionName": "southeastasia",
+      "retailPrice": 0.1666,
+      "unitOfMeasure": "1/Day",
+      "meterId": "5c9e7a65-5784-494c-9718-7749d4075dd9",
+      "effectiveStartDate": "2018-01-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Log Analytics",
+      "productName": "Log Analytics",
+      "meterName": "Analytics Logs Data Ingestion",
+      "skuName": "Analytics Logs",
+      "armRegionName": "southeastasia",
+      "retailPrice": 2.99,
+      "unitOfMeasure": "1 GB",
+      "meterId": "7a4feecb-f730-49f8-a801-efe03d15b862",
+      "effectiveStartDate": "2018-02-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Virtual Network",
+      "productName": "IP Addresses",
+      "meterName": "Standard IPv4 Static Public IP",
+      "skuName": "Standard",
+      "armRegionName": "southeastasia",
+      "retailPrice": 0.005,
+      "unitOfMeasure": "1 Hour",
+      "meterId": "9c150bf9-2bad-430e-a53c-c213804f49ef",
+      "effectiveStartDate": "2018-06-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Load Balancer",
+      "productName": "Load Balancer",
+      "meterName": "Standard Included LB Rules and Outbound Rules",
+      "skuName": "Standard",
+      "armRegionName": "Global",
+      "retailPrice": 0.025,
+      "unitOfMeasure": "1 Hour",
+      "meterId": "27827eb0-7f60-4928-940b-f5fe15e7a4cb",
+      "effectiveStartDate": "2018-04-11T00:00:00Z"
+    },
+    {
+      "serviceName": "Load Balancer",
+      "productName": "Load Balancer",
+      "meterName": "Standard Data Processed",
+      "skuName": "Standard",
+      "armRegionName": "Global",
+      "retailPrice": 0.005,
+      "unitOfMeasure": "1 GB",
+      "meterId": "dfc7cc11-fbe2-41c8-b6fa-24a574223938",
+      "effectiveStartDate": "2018-04-11T00:00:00Z"
+    },
+    {
+      "serviceName": "Azure DNS",
+      "productName": "Azure DNS",
+      "meterName": "Private Zone",
+      "skuName": "Private",
+      "armRegionName": "",
+      "retailPrice": 0.5,
+      "unitOfMeasure": "1",
+      "meterId": "0b608a26-f611-4232-8192-ce81b6b57194",
+      "effectiveStartDate": "2019-12-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Azure DNS",
+      "productName": "Azure DNS",
+      "meterName": "Private Queries",
+      "skuName": "Private",
+      "armRegionName": "Zone 1",
+      "retailPrice": 0.4,
+      "unitOfMeasure": "1M",
+      "meterId": "46cff9cb-4b15-4af0-bf41-25143827fef8",
+      "effectiveStartDate": "2019-12-01T00:00:00Z"
+    },
+    {
+      "serviceName": "Key Vault",
+      "productName": "Key Vault",
+      "meterName": "Operations",
+      "skuName": "Standard",
+      "armRegionName": "southeastasia",
+      "retailPrice": 0.03,
+      "unitOfMeasure": "10K",
+      "meterId": "0f824807-2376-435c-95c9-f992b67a07b0",
+      "effectiveStartDate": "2015-08-01T00:00:00Z"
+    }
+  ]
+}

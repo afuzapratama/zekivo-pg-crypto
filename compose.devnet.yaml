@@ -1,0 +1,95 @@
+name: zekivo-gateway-devnet
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: gateway_devnet
+      POSTGRES_USER: gateway_devnet
+      POSTGRES_PASSWORD: ${DEVNET_DB_PASSWORD:?Run pnpm devnet:init}
+    ports: ["127.0.0.1:55433:5432"]
+    volumes: ["postgres-devnet:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway_devnet -d gateway_devnet"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  migrate:
+    image: zekivo-gateway-devnet-app
+    build: { context: ., dockerfile: infra/docker/Dockerfile, target: base }
+    environment: &runtime
+      DATABASE_URL: postgres://gateway_devnet:${DEVNET_DB_PASSWORD}@postgres:5432/gateway_devnet
+      APP_ENV: staging
+      SOLANA_CLUSTER: devnet
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL}
+      ENABLED_ASSETS: ${ENABLED_ASSETS:-USDC}
+      SCAN_INTERVAL_MS: 10000
+      CHAIN_MONITORING: "true"
+      WEBHOOK_DELIVERY: "false"
+      WEB_ORIGIN: http://localhost:13100
+      HOST: 0.0.0.0
+      PORT: 4100
+    command: ["pnpm", "db:migrate"]
+    depends_on: { postgres: { condition: service_healthy } }
+  provision:
+    image: zekivo-gateway-devnet-app
+    environment:
+      <<: *runtime
+      DEVNET_API_KEY: ${DEVNET_API_KEY:?Run pnpm devnet:init}
+      DEVNET_PROJECT_ID: ${DEVNET_PROJECT_ID:?Run pnpm devnet:init}
+    command: ["pnpm", "devnet:provision"]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+  api:
+    image: zekivo-gateway-devnet-app
+    environment:
+      <<: *runtime
+      WEBHOOK_ENCRYPTION_KEY: ${WEBHOOK_ENCRYPTION_KEY:-}
+      NOTIFICATION_ENCRYPTION_KEY: ${NOTIFICATION_ENCRYPTION_KEY:-}
+      LOCAL_MAILPIT_ENABLED: ${LOCAL_MAILPIT_ENABLED:-false}
+      ADMIN_AUTH_ENABLED: ${ADMIN_AUTH_ENABLED:-false}
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-}
+      ENTRA_CLIENT_SECRET: ${ENTRA_CLIENT_SECRET:-}
+      ADMIN_ALLOWED_IDENTITIES: ${ADMIN_ALLOWED_IDENTITIES:-}
+    command: ["pnpm", "--filter", "@zekivo/api", "dev"]
+    ports: ["127.0.0.1:14100:4100"]
+    depends_on: { provision: { condition: service_completed_successfully } }
+  worker:
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    image: zekivo-gateway-devnet-app
+    environment:
+      <<: *runtime
+      NOTIFICATION_ENCRYPTION_KEY: ${NOTIFICATION_ENCRYPTION_KEY:-}
+      LOCAL_MAILPIT_ENABLED: ${LOCAL_MAILPIT_ENABLED:-false}
+    command: ["pnpm", "--filter", "@zekivo/worker", "dev"]
+    stop_grace_period: 60s
+    depends_on: { provision: { condition: service_completed_successfully } }
+  monitor:
+    image: zekivo-gateway-devnet-app
+    restart: unless-stopped
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      <<: *runtime
+      NOTIFICATION_ENCRYPTION_KEY: ${NOTIFICATION_ENCRYPTION_KEY:-}
+      LOCAL_MAILPIT_ENABLED: ${LOCAL_MAILPIT_ENABLED:-false}
+      MONITOR_API_URL: http://api:4100
+    command: ["pnpm", "exec", "tsx", "packages/monitoring/src/main.ts"]
+    stop_grace_period: 60s
+    depends_on:
+      {
+        api: { condition: service_started },
+        worker: { condition: service_started },
+      }
+  web:
+    image: zekivo-gateway-devnet-app
+    environment:
+      APP_ENV: staging
+      SOLANA_CLUSTER: devnet
+      API_INTERNAL_URL: http://api:4100
+      API_PUBLIC_URL: http://localhost:14100
+      LOCAL_PLAYGROUND: "false"
+      WEB_ORIGIN: http://localhost:13100
+    command: ["pnpm", "--filter", "@zekivo/web", "dev"]
+    ports: ["127.0.0.1:13100:3100"]
+    depends_on: { api: { condition: service_started } }
+volumes:
+  postgres-devnet:

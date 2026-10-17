@@ -1,0 +1,22 @@
+name: infrastructure
+on:
+  push:
+    paths: ["infra/azure/**", ".github/workflows/infra-checks.yml"]
+  pull_request:
+    paths: ["infra/azure/**", ".github/workflows/infra-checks.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bicep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Compile staging templates (no Azure login or deployment)
+        run: |
+          az bicep install --version v0.48.1
+          for template in main workloads jobs budget; do
+            az bicep build --file "infra/azure/$template.bicep" --outfile "$RUNNER_TEMP/$template.json"
+          done
+      - run: node --check infra/azure/database-bootstrap.mjs

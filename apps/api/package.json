@@ -1,0 +1,12 @@
+{
+  "name": "@zekivo/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/main.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
