@@ -920,3 +920,38 @@ mencakup RG staging dan RG managed environment. Detail infra/azure/README.md.
 F9-02 rancangan tersedia, belum cloud workload deploy/secret/provision/image push.
 F9-11 estimasi tersedia, billing currency+email budget dan harga/pemakaian aktual
 masih perlu verifikasi sebelum apply. Staging Azure belum dibuat; Mainnet tetap off.
+
+### Azure staging mulai diterapkan — 17 Oktober 2026
+
+Catatan ini memperbarui inventory/rancangan sebelumnya. Deployment subscription
+`zekivo-pg-staging-foundation-v1` dan `zekivo-pg-staging-budget-v1` Succeeded.
+Resource staging berada di `rg-zekivo-pg-staging`, Southeast Asia; PostgreSQL 17
+privat dan database `gateway_staging` sudah tersedia. Container Apps environment,
+ACR, Key Vault, VNet/private DNS dan Log Analytics telah dibuat. Budget US$200/bulan
+memantau RG aplikasi dan RG managed, dengan alert actual 50/80/100% dan forecast
+100%; budget bukan pembatas otomatis biaya. Kredensial staging terpisah disimpan
+di Key Vault dan file lokal ignored, tidak dalam Git/image.
+
+PR #7 merged melalui required CI: 218 tes backend dan 48 tes browser lulus,
+81 browser case khusus lingkungan lain skipped. Image dari tree yang sama dengan
+commit `c61b6ec` tersedia di ACR dengan digest
+`sha256:8a2e8fb7ca46564d47bcc4801f94d55f49a4b171d6bfa39a6c2d35319e7f39b5`.
+Callback Microsoft untuk hostname Azure sudah ditambahkan tanpa menghapus localhost.
+Provision Devnet memakai kebijakan saldo awal tercatat, future invoices only;
+checkpoint lama tidak digeser dan saldo awal tidak dikreditkan sebagai pembayaran.
+
+Mainnet dan webhook delivery tetap off. GitHub CI/branch protection aktif;
+continuous deployment Azure/OIDC belum dikonfigurasi. Login operator dan pembayaran
+Devnet di staging tetap perlu diverifikasi sebelum menyatakan integrasi lulus.
+
+Bootstrap role dan migrasi cloud Succeeded; job bootstrap beserta identity/akses
+sementara telah dihapus. Provision kedua token Succeeded. Workloads deployed dengan
+image digest di atas. API `/ready` HTTP 200; API merchant berhasil membuat invoice
+USDC `fb674a66-d822-4c26-9d3e-7a56f043707a` dan Mock USDT
+`d1a1c47a-52fa-4fa6-908b-9b87c258b6a6`, keduanya awalnya pending meski wallet
+mempunyai saldo dari tes lama. Tidak mengirim transaksi wallet otomatis.
+
+Startup web pertama menemukan masalah direktori kerja Next.js pada monorepo.
+Perintah deployment kini menyebut `apps/web` secara eksplisit; uji image runtime
+0.25 CPU/512 MiB menghasilkan login HTTP 200. Revision Azure diperbarui memakai
+image yang sama; pemeriksaan HTTPS dan login operator tetap gate terpisah.

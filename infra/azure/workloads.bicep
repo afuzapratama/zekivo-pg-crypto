@@ -34,7 +34,7 @@ var specs = [
     role: 'web'
     port: 3100
     external: true
-    command: ['node', 'apps/web/node_modules/next/dist/bin/next', 'start', '--hostname', '0.0.0.0', '--port', '3100']
+    command: ['node', 'apps/web/node_modules/next/dist/bin/next', 'start', 'apps/web', '--hostname', '0.0.0.0', '--port', '3100']
     env: [
       { name: 'NODE_ENV', value: 'production' }
       { name: 'APP_ENV', value: 'staging' }
