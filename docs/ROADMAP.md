@@ -955,3 +955,12 @@ Startup web pertama menemukan masalah direktori kerja Next.js pada monorepo.
 Perintah deployment kini menyebut `apps/web` secara eksplisit; uji image runtime
 0.25 CPU/512 MiB menghasilkan login HTTP 200. Revision Azure diperbarui memakai
 image yang sama; pemeriksaan HTTPS dan login operator tetap gate terpisah.
+
+Verifikasi akhir deployment awal: revision web dan API Healthy; login web HTTP 200
+juga dibuka dengan Chromium. Dashboard anonymous redirect 307 ke `/login`,
+`/admin/auth/session` dan `/admin/overview` anonymous 401. POST login lewat web
+redirect 303 ke `login.microsoftonline.com` dengan cookie Secure. Ini menguji awal
+OIDC, bukan callback/session operator selesai. Kedua invoice smoke tetap pending
+pada pembacaan ulang; transfer Devnet staging belum dilakukan. Worker/monitor
+started; error konfigurasi worker saat startup sebelum provision selesai tercatat
+sebagai kejadian awal, bukan bukti scanner sehat berkelanjutan.

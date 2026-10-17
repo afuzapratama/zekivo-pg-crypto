@@ -152,3 +152,8 @@ Callback Entra web Azure telah ditambahkan; localhost dipertahankan. Login
 operator nyata, transfer Devnet pada staging, webhook HTTPS eksternal, restore,
 load/security dan RPC failover belum dinyatakan lulus. Mainnet tetap off dan
 `WEBHOOK_DELIVERY=false` sampai endpoint integrasi disiapkan.
+
+Web dan API revision Healthy; HTTPS login HTTP 200 diverifikasi dengan Chromium.
+Dashboard tanpa sesi redirect ke login, admin API menolak anonymous 401. Awal login
+Microsoft lewat web mengembalikan 303 ke Microsoft dan cookie Secure; operator
+masih perlu menyelesaikan login nyata untuk memverifikasi callback/sesi/allowlist.
