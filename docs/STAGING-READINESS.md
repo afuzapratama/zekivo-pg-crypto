@@ -132,3 +132,28 @@ lulus; foundation What-If Azure Succeeded tanpa apply. Estimasi all-active 31 ha
 US$197.44 dengan allowance/contingency; margin sempit dan bukan hard cap. Workspace
 sudah Git init/origin SSH untuk initial import. Secret scanning/push protection
 repo public aktif; workflow code/infra tidak memiliki akses deploy Azure.
+
+### Status aktual 17 Oktober 2026
+
+Inventory/rancangan di atas adalah catatan sebelum apply. Foundation dan budget
+kini Succeeded di `rg-zekivo-pg-staging`; database privat sudah dibootstrap dan
+migrasi selesai. Key Vault menyimpan kredensial terpisah; bootstrap identity
+sementara dicabut setelah tugas selesai. GitHub main dilindungi PR + required
+check; PR #7 merged setelah CI lulus. Azure continuous deployment/OIDC belum ada.
+API readiness cloud HTTP 200 dan pembuatan invoice USDC/Mock USDT berhasil.
+Rincian deployment dan pengujian yang masih menunggu ada di
+[ROADMAP.md](ROADMAP.md#azure-staging-mulai-diterapkan--17-oktober-2026).
+
+URL staging (Devnet saja):
+- Web: https://zkpgstg-web.nicebay-76e1d13a.southeastasia.azurecontainerapps.io
+- API: https://zkpgstg-api.nicebay-76e1d13a.southeastasia.azurecontainerapps.io
+
+Callback Entra web Azure telah ditambahkan; localhost dipertahankan. Login
+operator nyata, transfer Devnet pada staging, webhook HTTPS eksternal, restore,
+load/security dan RPC failover belum dinyatakan lulus. Mainnet tetap off dan
+`WEBHOOK_DELIVERY=false` sampai endpoint integrasi disiapkan.
+
+Web dan API revision Healthy; HTTPS login HTTP 200 diverifikasi dengan Chromium.
+Dashboard tanpa sesi redirect ke login, admin API menolak anonymous 401. Awal login
+Microsoft lewat web mengembalikan 303 ke Microsoft dan cookie Secure; operator
+masih perlu menyelesaikan login nyata untuk memverifikasi callback/sesi/allowlist.
