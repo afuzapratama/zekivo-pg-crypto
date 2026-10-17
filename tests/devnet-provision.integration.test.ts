@@ -105,8 +105,22 @@ describe.skipIf(!url)("isolated Devnet initial scan boundary", () => {
     balance = "0";
   });
   it("records first boundary and never advances it just because provision reruns", async () => {
-    const first = await provisionUsdc(pool, rpc, project, "test-key");
+    balance = "1000001";
+    const first = await provisionUsdc(
+      pool,
+      rpc,
+      project,
+      "test-key",
+      "USDC",
+      "record-future-only",
+    );
     expect(first.scanned_through_slot).toBe("100");
+    const audit = await pool.query(
+      "SELECT entity_id FROM audit_logs WHERE action='devnet.initial_scan_boundary'",
+    );
+    expect(JSON.parse(audit.rows[0].entity_id).opening_balance_units).toBe(
+      "1000001",
+    );
     head = 200;
     const next = await provisionUsdc(pool, rpc, project, "test-key");
     expect(next.scanned_through_slot).toBe("100");
@@ -181,6 +195,16 @@ describe.skipIf(!url)("isolated Devnet initial scan boundary", () => {
     await expect(provisionUsdc(pool, rpc, project, "test-key")).rejects.toThrow(
       "first scan boundary",
     );
+    await expect(
+      provisionUsdc(
+        pool,
+        rpc,
+        project,
+        "test-key",
+        "USDC",
+        "record-future-only",
+      ),
+    ).rejects.toThrow("first scan boundary");
     expect((await pool.query("SELECT * FROM scan_checkpoints")).rowCount).toBe(
       0,
     );
