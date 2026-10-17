@@ -93,7 +93,12 @@ export default function Home() {
               <p className="mb-3 text-[#9bb5ac]">
                 // Contoh request dari backend merchant
               </p>
-              <pre className="overflow-auto">{`{\n  "order_id": "zekivo-order-001",\n  "asset": "USDC",\n  "amount": "25"\n}`}</pre>
+              <pre
+                tabIndex={0}
+                role="region"
+                aria-label="Contoh request invoice"
+                className="overflow-auto focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+              >{`{\n  "order_id": "zekivo-order-001",\n  "asset": "USDC",\n  "amount": "25"\n}`}</pre>
             </div>
             <div className="space-y-4 p-5">
               {[
