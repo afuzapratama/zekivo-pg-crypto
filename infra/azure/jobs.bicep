@@ -79,7 +79,14 @@ resource job 'Microsoft.App/jobs@2025-01-01' = {
           name: kind
           image: image
           command: kind == 'bootstrap' ? ['node', 'infra/azure/database-bootstrap.mjs'] : ['pnpm', 'db:migrate']
-          env: concat([{ name: 'APP_ENV', value: 'staging' }, { name: 'SOLANA_CLUSTER', value: 'devnet' }], secretEnv)
+          env: concat(
+            [
+              { name: 'APP_ENV', value: 'staging' }
+              { name: 'SOLANA_CLUSTER', value: 'devnet' }
+              { name: 'SCAN_INTERVAL_MS', value: '10000' }
+            ],
+            secretEnv
+          )
           resources: { cpu: json('0.25'), memory: '0.5Gi' }
         }
       ]
