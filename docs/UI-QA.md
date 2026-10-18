@@ -75,3 +75,11 @@ Alur localnet riil juga lulus: playground mengirim harga USD 2.00 → checkout
 menampilkan $2.00 → pembayaran mock finalized/paid → webhook delivered dengan
 signature verified → reload mempertahankan bukti. Pemeriksaan database confirmed
 event memuat price_currency=USD, price_amount=2.00 dan rate fixture tersimpan.
+
+### Checkout light di Azure staging — 18 Oktober 2026
+
+Release PR #9 menggunakan panel putih, teks gelap dan tombol utama hitam.
+Browser cloud memverifikasi harga pesanan USD `25.83` terpisah dari nominal
+USDC, ikon SVG berhasil dimuat, dan tidak ada overflow horizontal pada viewport
+1440×1000, 390×844 serta 320×740. Ini smoke tanpa transfer dana; alur pembayaran
+Devnet aktual di staging tetap menunggu operator.
