@@ -9,6 +9,8 @@ param vaultName string
 param entraTenantId string
 param entraClientId string
 param domain string
+@description('Enable staging API/worker webhook delivery; monitor remains dispatcher-free.')
+param webhookDeliveryEnabled bool = true
 var origin = 'https://${prefix}-web.${domain}'
 var api = 'https://${prefix}-api.${domain}'
 var common = [
@@ -18,7 +20,6 @@ var common = [
   { name: 'ENABLED_ASSETS', value: 'USDT,USDC' }
   { name: 'SCAN_INTERVAL_MS', value: '10000' }
   { name: 'CHAIN_MONITORING', value: 'true' }
-  { name: 'WEBHOOK_DELIVERY', value: 'false' }
   { name: 'LOCAL_PLAYGROUND', value: 'false' }
   { name: 'LOCAL_MAILPIT_ENABLED', value: 'false' }
   { name: 'WEB_ORIGIN', value: origin }
@@ -54,6 +55,7 @@ var specs = [
     env: concat(
       common,
       [
+        { name: 'WEBHOOK_DELIVERY', value: string(webhookDeliveryEnabled) }
         { name: 'ADMIN_AUTH_ENABLED', value: 'true' }
         { name: 'PRICING_PROVIDER', value: 'coingecko-demo' }
         { name: 'PRICING_CACHE_TTL_SECONDS', value: '60' }
@@ -78,7 +80,7 @@ var specs = [
     port: 0
     external: false
     command: ['node', 'apps/worker/dist/main.js']
-    env: common
+    env: concat(common, [{ name: 'WEBHOOK_DELIVERY', value: string(webhookDeliveryEnabled) }])
     secrets: [databaseSecret, rpcSecret, notificationSecret, webhookSecret]
   }
   {
