@@ -1044,3 +1044,14 @@ lulus; confirmed payload menyertakan harga asli USD dan kurs quote tersimpan.
   Webhook delivery eksternal tetap nonaktif; Azure OIDC deploy otomatis,
   pembayaran Devnet dari wallet operator dan pengujian integrasi eksternal
   tetap pekerjaan berikutnya.
+
+### Playground Devnet staging dan serah terima integrasi
+
+Playground lokal tetap localnet-only. Mode staging Devnet ditambahkan terpisah:
+operator memasukkan API key project dalam memori halaman, membuat invoice USD,
+membuka hosted checkout dan memantau invoice/delivery. Tidak ada key tertanam,
+penyimpanan browser atau runner pengiriman otomatis pada Azure. Pembayaran
+memakai wallet Devnet pengguna. CI menambahkan browser test mode staging dengan
+API fixture untuk koneksi, retry idempotent, polling dan penghapusan key.
+Panduan implementasi Zekivo terpusat di ZEKIVO-STAGING-INTEGRATION.md.
+Container localnet dan Devnet lokal dihentikan tanpa menghapus volume.

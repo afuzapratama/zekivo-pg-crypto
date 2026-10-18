@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
-const baseURL = process.env.CHECKOUT_BASE_URL ?? "http://127.0.0.1:3100";
+const stagingPlayground = process.env.STAGING_PLAYGROUND_E2E === "1";
+const port = stagingPlayground ? 3101 : 3100;
+const baseURL = process.env.CHECKOUT_BASE_URL ?? `http://127.0.0.1:${port}`;
 if (!["localhost", "127.0.0.1", "[::1]"].includes(new URL(baseURL).hostname))
   throw new Error(
     "Checkout browser tests only target a loopback development server",
@@ -13,8 +15,16 @@ export default defineConfig({
   webServer: process.env.CHECKOUT_BASE_URL
     ? undefined
     : {
-        command:
-          "pnpm --filter @zekivo/web exec next start --hostname 127.0.0.1 --port 3100",
+        command: `pnpm --filter @zekivo/web exec next start --hostname 127.0.0.1 --port ${port}`,
+        ...(stagingPlayground
+          ? {
+              env: {
+                APP_ENV: "staging",
+                SOLANA_CLUSTER: "devnet",
+                API_PUBLIC_URL: "https://staging-api.example.test",
+              },
+            }
+          : {}),
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 30000,
