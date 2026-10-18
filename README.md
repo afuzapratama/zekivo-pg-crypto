@@ -51,7 +51,7 @@ implementasi ada di [dokumen harga USD](docs/USD-PRICING-AND-QUOTES.md).
 Rekomendasi awal: CoinGecko Demo untuk development/staging nonkomersial; provider
 berlisensi komersial dan biaya tambahan ditinjau sebelum live. Belum ada pembelian
 paket. Adapter harga/cache dan konversi decimal sudah dapat diuji melalui
-`pnpm pricing:inspect --devnet`; key dibaca dari `.env.devnet`. Invoice USD menyimpan harga asli dan quote server; playground lokal sudah memakai input USD. Azure belum diperbarui. Lihat [panduan pricing](docs/PRICING.md).
+`pnpm pricing:inspect --devnet`; key dibaca dari `.env.devnet`. Invoice USD menyimpan harga asli dan quote server; playground lokal sudah memakai input USD. Azure staging sudah memakai versi ini; migrasi dan smoke invoice USD lulus. Lihat [panduan pricing](docs/PRICING.md).
 
 ## Development tanpa container aplikasi
 
@@ -191,4 +191,4 @@ tersedia `pnpm devnet:refund-inspect <invoice-id> <destination-owner> <amount> [
 alat ini hanya membaca dan tidak mengirim/mencatat refund.
 Lihat [panduan refund](docs/REFUNDS.md).
 
-Target deployment berikutnya: [kesiapan staging Devnet](docs/STAGING-READINESS.md). Mainnet/produksi menunggu arahan terpisah.
+Staging Devnet tersedia di https://zkpgstg-web.nicebay-76e1d13a.southeastasia.azurecontainerapps.io. Status rilis dan pemeriksaan berikutnya: [kesiapan staging Devnet](docs/STAGING-READINESS.md). Mainnet/produksi menunggu arahan terpisah.
