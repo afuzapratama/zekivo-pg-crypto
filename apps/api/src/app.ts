@@ -1,3 +1,13 @@
+import type { FastifyRequest, FastifyReply } from "fastify";
+import {
+  usdInvoiceBody,
+  type UsdInvoiceInput,
+} from "../../../packages/contracts/src/usd-invoices.js";
+import { createUsdInvoice } from "../../../packages/pricing/src/invoices.js";
+import { createPricingService } from "../../../packages/pricing/src/service.js";
+import { createProvider } from "../../../packages/pricing/src/provider.js";
+import { PricingError } from "../../../packages/pricing/src/errors.js";
+import type { PricingConfig } from "../../../packages/pricing/src/config.js";
 import { adminDashboardRoutes } from "../../../packages/auth/src/dashboard.js";
 import { adminAuthRoutes } from "../../../packages/auth/src/routes.js";
 import type { AdminAuthConfig } from "../../../packages/auth/src/config.js";
@@ -37,6 +47,7 @@ import {
 export function buildApp(
   pool: pg.Pool,
   config: {
+    PRICING?: PricingConfig;
     ADMIN_AUTH?: AdminAuthConfig;
     APP_ENV: string;
     SOLANA_CLUSTER: string;
@@ -234,6 +245,117 @@ export function buildApp(
         }
       },
     );
+    const merchantAuth = async (req: FastifyRequest, reply: FastifyReply) => {
+      const authorization = req.headers.authorization;
+      if (!authorization?.startsWith("Bearer "))
+        return reply.code(401).send({ error: "unauthorized" });
+      const hash = createHash("sha256")
+        .update(authorization.slice(7))
+        .digest("hex");
+      const result = await pool.query(
+        "SELECT k.project_id FROM api_keys k JOIN projects p ON p.id=k.project_id WHERE k.key_hash=$1 AND k.revoked_at IS NULL AND (k.expires_at IS NULL OR k.expires_at>now()) AND p.environment=$2",
+        [hash, config.APP_ENV],
+      );
+      if (!result.rows[0])
+        return reply.code(401).send({ error: "unauthorized" });
+      (req as typeof req & { projectId: string }).projectId =
+        result.rows[0].project_id;
+    };
+    const priceService = config.PRICING
+      ? createPricingService(
+          pool,
+          config.PRICING,
+          createProvider(config.PRICING),
+        )
+      : undefined;
+    app.register(
+      async (merchant) => {
+        merchant.decorateRequest("projectId", "");
+        merchant.addHook("preHandler", merchantAuth);
+        merchant.post<{ Body: UsdInvoiceInput }>(
+          "/invoices",
+          {
+            schema: {
+              summary: "Create invoice priced in USD",
+              tags: ["Invoices"],
+              security: [{ merchantKey: [] }],
+              body: usdInvoiceBody,
+            },
+          },
+          async (req, reply) => {
+            const key = req.headers["idempotency-key"];
+            if (typeof key !== "string" || key.length < 1 || key.length > 128)
+              return reply.code(400).send({ error: "invalid_idempotency_key" });
+            const assets = req.body.allowed_payment_assets ?? [
+              req.body.payment_asset,
+            ];
+            if (
+              assets.some(
+                (a) =>
+                  !(config.ENABLED_ASSETS ?? "USDT,USDC")
+                    .split(",")
+                    .includes(a),
+              )
+            )
+              return reply.code(400).send({ error: "asset_disabled" });
+            try {
+              if (config.CHAIN_MONITORING === "true") {
+                if (!config.SOLANA_RPC_URL)
+                  return reply.code(503).send({ error: "chain_unavailable" });
+                const tokens = await pool.query<TokenConfig>(
+                  "SELECT * FROM token_configs WHERE environment=$1 AND cluster=$2",
+                  [config.APP_ENV, config.SOLANA_CLUSTER],
+                );
+                try {
+                  assertEnabledAssets(tokens.rows, config.ENABLED_ASSETS);
+                  await validateConfigs(
+                    new SolanaRpc(config.SOLANA_RPC_URL),
+                    tokens.rows,
+                  );
+                } catch {
+                  return reply.code(503).send({ error: "chain_unavailable" });
+                }
+              }
+              const result = await createUsdInvoice(
+                pool,
+                (req as typeof req & { projectId: string }).projectId,
+                config.APP_ENV,
+                config.SOLANA_CLUSTER,
+                key,
+                req.body,
+                {
+                  getPrices: async () => {
+                    if (!priceService)
+                      throw new PricingError("configuration_invalid");
+                    return priceService.getPrices();
+                  },
+                },
+                config.CHAIN_MONITORING === "true",
+              );
+              return reply
+                .code(result.replayed ? 200 : 201)
+                .send(serializeInvoice(result.row, config.WEB_ORIGIN));
+            } catch (error) {
+              if (error instanceof Conflict)
+                return reply
+                  .code(409)
+                  .send({ error: "conflict", message: error.message });
+              if (error instanceof PricingError)
+                return reply
+                  .code(error.code === "invalid_amount" ? 400 : 503)
+                  .send({
+                    error:
+                      error.code === "invalid_amount"
+                        ? "invalid_amount"
+                        : "pricing_unavailable",
+                  });
+              throw error;
+            }
+          },
+        );
+      },
+      { prefix: "/v2" },
+    );
     app.register(
       async (merchant) => {
         merchant.decorateRequest("projectId", "");
@@ -243,22 +365,7 @@ export function buildApp(
             security: [{ merchantKey: [] }],
           };
         });
-        merchant.addHook("preHandler", async (req, reply) => {
-          const authorization = req.headers.authorization;
-          if (!authorization?.startsWith("Bearer "))
-            return reply.code(401).send({ error: "unauthorized" });
-          const hash = createHash("sha256")
-            .update(authorization.slice(7))
-            .digest("hex");
-          const result = await pool.query(
-            "SELECT k.project_id FROM api_keys k JOIN projects p ON p.id=k.project_id WHERE k.key_hash=$1 AND k.revoked_at IS NULL AND (k.expires_at IS NULL OR k.expires_at>now()) AND p.environment=$2",
-            [hash, config.APP_ENV],
-          );
-          if (!result.rows[0])
-            return reply.code(401).send({ error: "unauthorized" });
-          (req as typeof req & { projectId: string }).projectId =
-            result.rows[0].project_id;
-        });
+        merchant.addHook("preHandler", merchantAuth);
         webhookRoutes(merchant, pool, config);
         merchant.post<{ Body: InvoiceInput }>(
           "/invoices",

@@ -149,6 +149,11 @@ services:
       chain-seed: { condition: service_completed_successfully }
       api: { condition: service_started }
   web:
+    volumes:
+      - ./apps/web/app:/app/apps/web/app
+      - ./apps/web/components:/app/apps/web/components
+      - ./apps/web/lib:/app/apps/web/lib
+      - ./apps/web/public:/app/apps/web/public
     environment:
       API_INTERNAL_URL: http://api:4100
       APP_ENV: local

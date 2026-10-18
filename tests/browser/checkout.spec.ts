@@ -74,6 +74,12 @@ test("responsive layout, readable token details, keyboard and accessibility", as
   ).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(
+    page.getByRole("button", { name: "Salin nominal", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(copy).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(
     page.getByRole("link", { name: "Buka wallet Solana Pay" }),
   ).toBeFocused();
   const audit = await new AxeBuilder({ page })
@@ -488,4 +494,39 @@ test("asset proxy rejects cross-site requests, invented prices and oversized bod
       })
     ).status(),
   ).toBe(413);
+});
+
+test("USD checkout displays original merchant price separately from converted token amount", async ({
+  page,
+}) => {
+  await page.route("**/api/checkout", (route) =>
+    route.fulfill({
+      json: {
+        ...fixture(),
+        price_currency: "USD",
+        price_amount: "25.83",
+        amount: "25.855856",
+        payable_amount: "25.855857",
+        quote: {
+          rate_usd_per_token: "0.999",
+          converted_amount: "25.855856",
+          source: "fixture",
+        },
+      },
+    }),
+  );
+  await page.goto(path);
+  await expect(
+    page.getByText("$25.83", { exact: false }).first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Instruksi pembayaran" })
+      .getByText("25.855857 USDC", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Rincian invoice", { exact: true }).click();
+  await expect(
+    page.getByText("1 USDC = $0.999", { exact: true }),
+  ).toBeVisible();
+  await noOverflow(page);
 });

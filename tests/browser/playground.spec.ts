@@ -31,7 +31,9 @@ test("playground responsive generator uses server credentials and renders persis
       route.request().method() === "POST"
     ) {
       const body = route.request().postDataJSON();
-      expect(body.asset).toBe("USDC");
+      expect(body.payment_asset).toBe("USDC");
+      expect(body.price_currency).toBe("USD");
+      expect(body.price_amount).toBe("25.83");
       requestId = body.request_id;
       expect(requestId).toMatch(/^[a-f0-9-]{36}$/);
       return route.fulfill({ json: { invoice } });
@@ -182,7 +184,7 @@ test("@chain playground generates, pays and verifies webhook entirely through lo
   await expect(
     page.getByRole("button", { name: "Generate invoice", exact: true }),
   ).toBeEnabled();
-  await page.getByLabel("Nominal dasar", { exact: true }).fill("2");
+  await page.getByLabel("Harga pesanan (USD)", { exact: true }).fill("2.00");
   const created = page.waitForResponse(
     (r) =>
       r.url().endsWith("/api/playground/invoices") &&
@@ -191,13 +193,20 @@ test("@chain playground generates, pays and verifies webhook entirely through lo
   await page
     .getByRole("button", { name: "Generate invoice", exact: true })
     .click();
-  expect((await created).status()).toBe(201);
+  const createdResponse = await created;
+  expect(createdResponse.status()).toBe(201);
+  const createdInvoice = (await createdResponse.json()).invoice;
+  expect(createdInvoice.price_currency).toBe("USD");
+  expect(createdInvoice.price_amount).toBe("2.00");
   await expect(
     page.getByRole("link", { name: "Buka checkout QR" }),
   ).toBeVisible();
   const popup = context.waitForEvent("page");
   await page.getByRole("link", { name: "Buka checkout QR" }).click();
   const checkout = await popup;
+  await expect(
+    checkout.getByText("$2.00", { exact: false }).first(),
+  ).toBeVisible();
   await expect(
     checkout.getByRole("link", { name: "Buka wallet Solana Pay" }),
   ).toBeVisible();
@@ -230,7 +239,7 @@ test("@chain playground underpayment enters review without a paid webhook", asyn
   await expect(
     page.getByRole("button", { name: "Generate invoice", exact: true }),
   ).toBeEnabled();
-  await page.getByLabel("Nominal dasar", { exact: true }).fill("2");
+  await page.getByLabel("Harga pesanan (USD)", { exact: true }).fill("2.00");
   await page.getByLabel("Aset awal", { exact: true }).selectOption("USDT");
   await page
     .getByRole("button", { name: "Generate invoice", exact: true })

@@ -49,3 +49,24 @@ Tiga pengujian halaman status Devnet (desktop/mobile/narrow) lolos dengan gatewa
 ready, local signer dinonaktifkan dan guard Host aktif. Typecheck dan lint lolos.
 Pengujian inti/database 112 tes lolos; penambahan assertion pin USDT juga lolos.
 Status paid USDT belum diuji sampai pembeli menandatangani transfer.
+
+### Tema hitam netral — 18 Oktober 2026
+
+Layout pelanggan mengikuti referensi operator: ringkasan di kiri dan panel
+pembayaran di kanan, nominal/alamat berdampingan dengan QR pada desktop. Mobile
+memakai satu kolom. Palet zinc netral berlaku khusus checkout; disclosure menampung
+rincian invoice dan mint. Penanda token uji tetap terlihat. Nominal tetap tampil
+pada paid/review/expired; QR dan aksi kirim mengikuti guard server yang sama.
+
+Seluruh 39 tes `checkout.spec.ts` lulus pada desktop, mobile dan 320 px: WCAG/axe,
+keyboard, no overflow, decode URI QR, clipboard, reconnect, expiry, review, paid,
+pergantian aset/konflik dan validasi proxy. Urutan keyboard diperbarui mengikuti
+layout: rincian → salin nominal → salin alamat → wallet. ESLint/TypeScript lulus.
+Screenshot menggunakan fixture sintetis:
+[desktop](qa/checkout-neutral-desktop-fixture.png),
+[mobile](qa/checkout-neutral-mobile-fixture.png).
+
+Alur localnet setelah redesign juga lulus: membuat invoice lewat playground,
+membuka checkout, membayar mock token, melihat finalized/paid, menerima webhook
+signature verified, lalu reload mempertahankan status. Tidak ada transaksi Devnet
+atau perubahan staging pada pengujian ini.

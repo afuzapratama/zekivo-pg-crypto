@@ -13,12 +13,15 @@ import {
   Radio,
 } from "lucide-react";
 import styles from "../docs.module.css";
+import ui from "./playground.module.css";
 type Invoice = {
   id: string;
   order_id: string;
   asset: string;
   status: string;
   amount: string;
+  price_currency?: "USD";
+  price_amount?: string;
   payable_amount: string;
   checkout_url: string;
   payment_enabled: boolean;
@@ -58,20 +61,21 @@ type View = {
 type Create = {
   request_id: string;
   order_id: string;
-  asset: string;
-  amount: string;
+  price_currency: "USD";
+  price_amount: string;
+  payment_asset: string;
+  network: "solana";
   expires_in_seconds: number;
-  payment_options?: { asset: string; amount: string }[];
+  allowed_payment_assets?: string[];
 };
 const storageKey = "zekivo.local.playground.invoice";
 export default function Playground() {
   const [ready, setReady] = useState(false),
     [asset, setAsset] = useState("USDC"),
-    [amount, setAmount] = useState("25"),
-    [other, setOther] = useState("25"),
+    [amount, setAmount] = useState("25.83"),
     [both, setBoth] = useState(false),
     [order, setOrder] = useState(""),
-    [expiry, setExpiry] = useState(1800);
+    [expiry, setExpiry] = useState(900);
   const [invoiceId, setInvoiceId] = useState(""),
     [view, setView] = useState<View | null>(null),
     [busy, setBusy] = useState(false),
@@ -79,27 +83,53 @@ export default function Playground() {
     [connected, setConnected] = useState(false),
     [refresh, setRefresh] = useState(0),
     [last, setLast] = useState<Create | null>(null);
+  const [runnerNotice, setRunnerNotice] = useState(
+    "Menghubungkan ke runner lokal…",
+  );
+  const [createUncertain, setCreateUncertain] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    void fetch("/api/playground/health", {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then((r) => {
-        setReady(r.ok);
-        if (!r.ok)
-          setNotice(
-            "Playground lokal belum aktif. Jalankan Compose terbaru; fitur ini tidak tersedia pada Devnet/Mainnet atau hosting publik.",
-          );
-      })
-      .catch(() => setNotice("Runner lokal belum dapat dihubungi."));
+    let timer: ReturnType<typeof setTimeout>;
+    async function connect() {
+      try {
+        const response = await fetch("/api/playground/health", {
+          cache: "no-store",
+          signal: AbortSignal.any([
+            controller.signal,
+            AbortSignal.timeout(10000),
+          ]),
+        });
+        if (controller.signal.aborted) return;
+        setReady(response.ok);
+        setRunnerNotice(
+          response.ok
+            ? "Runner lokal aktif. Siap membuat invoice dan menguji pembayaran mock."
+            : response.status === 404
+              ? "Playground pembayaran mock tersedia di localhost dengan mode localnet. Buka lingkungan lokal untuk menjalankan pengujian."
+              : "Runner lokal sedang tidak tersedia. Koneksi akan dicoba kembali otomatis.",
+        );
+        await response.body?.cancel();
+        if (response.ok || response.status === 404) return;
+      } catch {
+        if (controller.signal.aborted) return;
+        setReady(false);
+        setRunnerNotice(
+          "Runner lokal belum dapat dihubungi. Mencoba kembali otomatis…",
+        );
+      }
+      timer = setTimeout(() => void connect(), 5000);
+    }
+    void connect();
     try {
       const id = localStorage.getItem(storageKey);
       if (id && /^[a-f0-9-]{36}$/.test(id)) setInvoiceId(id);
     } catch {
       /* Storage is optional. */
     }
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
   }, []);
   useEffect(() => {
     if (!invoiceId || !ready) return;
@@ -149,15 +179,14 @@ export default function Playground() {
     const data: Create = retry ?? {
       request_id: crypto.randomUUID(),
       order_id: order || crypto.randomUUID(),
-      asset,
-      amount,
+      payment_asset: asset,
+      price_currency: "USD",
+      price_amount: amount,
+      network: "solana",
       expires_in_seconds: expiry,
       ...(both
         ? {
-            payment_options: [
-              { asset, amount },
-              { asset: asset === "USDC" ? "USDT" : "USDC", amount: other },
-            ],
+            allowed_payment_assets: ["USDT", "USDC"],
           }
         : {}),
     };
@@ -171,6 +200,7 @@ export default function Playground() {
       });
       if (!r.ok) throw new Error();
       const result = await r.json();
+      setCreateUncertain(false);
       setView(null);
       setConnected(false);
       setInvoiceId(result.invoice.id);
@@ -184,6 +214,7 @@ export default function Playground() {
         /* Storage is optional. */
       }
     } catch {
+      setCreateUncertain(true);
       setNotice(
         "Invoice belum dapat dipastikan. Periksa input/konflik order atau ulang request yang sama dengan tombol di bawah.",
       );
@@ -252,47 +283,53 @@ export default function Playground() {
     : null;
   return (
     <>
-      <Badge variant="outline" className={styles.badge}>
-        <FlaskConical size={12} aria-hidden="true" /> LOCALNET · MOCK TOKEN ·
-        BUKAN DANA ASLI
-      </Badge>
-      <h1>
-        Payment playground
-        <span className="ml-3 align-middle text-xs font-normal tracking-normal text-muted-foreground">
-          / sandbox
-        </span>
-      </h1>
-      <p>
-        Buat invoice, buka QR checkout, kirim token test dan telusuri webhook.
-        Transaksi benar-benar berjalan pada validator lokal; status paid tidak
-        disimulasikan.
-      </p>
-      <p role="status" className={styles.notice}>
-        <Radio size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-        <span>
-          {notice ||
-            (!ready
-              ? "Menghubungkan ke runner lokal…"
-              : "Runner lokal aktif. Kredensial merchant disimpan di server.")}
-        </span>
-      </p>
-      <div className={styles.steps} aria-label="Alur pengujian">
-        <span>
-          <b>1</b>Generate invoice
-        </span>
-        <span>→</span>
-        <span>
-          <b>2</b>Bayar mock token
-        </span>
-        <span>→</span>
-        <span>
-          <b>3</b>Verifikasi webhook
-        </span>
+      <header className={ui.header}>
+        <div>
+          <Badge variant="outline" className={styles.badge}>
+            <FlaskConical size={12} aria-hidden="true" /> LOCALNET · MOCK TOKEN
+          </Badge>
+          <h1>Payment playground</h1>
+          <p>Uji satu alur pembayaran, dari invoice sampai webhook diterima.</p>
+        </div>
+        <div className={ui.environment}>
+          <span className={ui.dot} data-ready={ready} />
+          <span>
+            {ready ? "Sandbox terhubung" : "Sandbox belum terhubung"}
+            <small>Token lokal · tanpa dana asli</small>
+          </span>
+        </div>
+      </header>
+      <ol className={ui.journey} aria-label="Alur pengujian">
+        {[
+          ["Buat invoice", "Tentukan aset dan nominal", Boolean(invoice)],
+          [
+            "Uji pembayaran",
+            "Buka checkout dan pilih skenario",
+            Boolean(view?.transfers.length),
+          ],
+          [
+            "Periksa webhook",
+            "Lihat event dan verifikasi signature",
+            Boolean(view?.receipts.some((r) => r.signature_verified)),
+          ],
+        ].map(([title, description, complete], index) => (
+          <li key={String(title)} data-complete={Boolean(complete)}>
+            <b>{complete ? "✓" : index + 1}</b>
+            <span>
+              {title}
+              <small>{description}</small>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div role="status" className={ui.notice} data-ready={ready}>
+        <Radio size={16} aria-hidden="true" />
+        <span>{notice || runnerNotice}</span>
       </div>
-      <div className={styles.columns}>
+      <div className={ui.workspace}>
         <Card
           role="region"
-          className={styles.card}
+          className={`${styles.card} ${ui.panel}`}
           aria-label="Generator invoice"
         >
           <h2 className="flex items-center gap-2">
@@ -310,20 +347,10 @@ export default function Playground() {
               void create();
             }}
           >
-            <Label>
-              Project sandbox
-              <Input value="Local sandbox · localnet" readOnly />
-            </Label>
-            <Label>
-              Order ID
-              <Input
-                value={order}
-                onChange={(e) => setOrder(e.target.value)}
-                placeholder="Kosongkan untuk UUID baru"
-                pattern="[a-zA-Z0-9_-]{1,80}"
-                maxLength={80}
-              />
-            </Label>
+            <p className={ui.hint}>
+              Masukkan harga asli dari Zekivo dalam USD. Gateway menghitung
+              jumlah token dan kode unik pembayaran.
+            </p>
             <Label>
               Aset awal
               <select
@@ -336,23 +363,12 @@ export default function Playground() {
               </select>
             </Label>
             <Label>
-              Nominal dasar
+              Harga pesanan (USD)
               <Input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 inputMode="decimal"
-                pattern="(0|[1-9][0-9]{0,2})(\.[0-9]{1,6})?"
-                required
-              />
-            </Label>
-            <Label>
-              Expiry (detik)
-              <Input
-                type="number"
-                value={expiry}
-                onChange={(e) => setExpiry(Number(e.target.value))}
-                min={60}
-                max={3600}
+                pattern="(0|[1-9][0-9]{0,2})(\.[0-9]{2})"
                 required
               />
             </Label>
@@ -362,24 +378,41 @@ export default function Playground() {
                 checked={both}
                 onChange={(e) => setBoth(e.target.checked)}
               />
-              Sediakan quote untuk kedua aset
+              Izinkan pembayaran USDT dan USDC
             </Label>
-            {both && (
-              <Label>
-                Quote {asset === "USDC" ? "USDT" : "USDC"}
-                <Input
-                  value={other}
-                  onChange={(e) => setOther(e.target.value)}
-                  inputMode="decimal"
-                  pattern="(0|[1-9][0-9]{0,2})(\.[0-9]{1,6})?"
-                  required
-                />
-              </Label>
-            )}
+            <details className={ui.advanced}>
+              <summary>
+                Pengaturan invoice <span>Order ID &amp; masa berlaku</span>
+              </summary>
+              <div className={ui.advancedFields}>
+                {" "}
+                <Label>
+                  Order ID
+                  <Input
+                    value={order}
+                    onChange={(e) => setOrder(e.target.value)}
+                    placeholder="Kosongkan untuk UUID baru"
+                    pattern="[a-zA-Z0-9_-]{1,80}"
+                    maxLength={80}
+                  />
+                </Label>
+                <Label>
+                  Expiry (detik)
+                  <Input
+                    type="number"
+                    value={expiry}
+                    onChange={(e) => setExpiry(Number(e.target.value))}
+                    min={60}
+                    max={900}
+                    required
+                  />
+                </Label>
+              </div>
+            </details>
             <Button className={styles.button} disabled={!ready || busy}>
-              Generate invoice
+              {busy ? "Memproses…" : "Generate invoice"}
             </Button>
-            {last && (
+            {last && createUncertain && (
               <Button
                 type="button"
                 className={`${styles.button} ${styles.secondary}`}
@@ -390,7 +423,7 @@ export default function Playground() {
               </Button>
             )}
           </form>
-          <details>
+          <details className={ui.inspector}>
             <summary className={styles.summary}>
               Request / response tanpa kredensial
             </summary>
@@ -401,7 +434,7 @@ export default function Playground() {
         </Card>
         <Card
           role="region"
-          className={styles.card}
+          className={`${styles.card} ${ui.panel}`}
           aria-label="Pembayaran dan status"
         >
           <h2 className="flex items-center gap-2">
@@ -413,30 +446,34 @@ export default function Playground() {
               <div>
                 <QrCode size={36} className="mx-auto" aria-hidden="true" />
                 <p className="mb-2 font-medium text-foreground">
-                  Belum ada invoice
+                  Checkout siap setelah invoice dibuat
                 </p>
                 <p>
-                  Invoice yang dibuat akan muncul di sini. Halaman dapat
-                  di-refresh untuk memuat kembali invoice lokal terakhir.
+                  Pilih aset dan nominal di form, lalu klik Generate invoice.
+                  Detail pembayaran dan skenario pengujian akan muncul di sini.
                 </p>
               </div>
             </div>
           ) : (
             <>
+              {invoice.price_currency === "USD" && (
+                <div className={styles.stat}>
+                  <span>Harga asli pesanan</span>
+                  <strong>${invoice.price_amount} USD</strong>
+                </div>
+              )}
+              <div className={ui.amount}>
+                <span>Nominal token yang harus dibayar</span>
+                <strong>
+                  {invoice.payable_amount} <small>{invoice.asset}</small>
+                </strong>
+                <Badge variant="outline">{invoice.status}</Badge>
+              </div>
               <div className={styles.stat}>
                 <span>Invoice</span>
                 <code>{invoice.id}</code>
               </div>
-              <div className={styles.stat}>
-                <span>Status server</span>
-                <strong>{invoice.status}</strong>
-              </div>
-              <div className={styles.stat}>
-                <span>Nominal persis</span>
-                <strong>
-                  {invoice.payable_amount} {invoice.asset}
-                </strong>
-              </div>
+
               <p>
                 {connected
                   ? "Status terbaru tersambung."
@@ -460,25 +497,31 @@ export default function Playground() {
                   Salin nominal
                 </Button>
               </div>
-              <p>
-                Gunakan satu skenario per invoice. Tombol mengirim mock token
-                dari wallet fixture lokal dan menunggu finalized; siapkan
-                invoice baru untuk skenario berikutnya.
-              </p>
-              <div className={styles.actions}>
+              <div className={ui.scenarioHeading}>
+                <h3>Skenario pembayaran</h3>
+                <p>
+                  Pilih satu skenario untuk setiap invoice. Runner mengirim
+                  token mock pada validator lokal.
+                </p>
+              </div>
+              <div className={ui.scenarios}>
                 {[
-                  ["exact", "Bayar tepat"],
-                  ["manual", "Transfer manual"],
-                  ["partial", "Bayar kurang"],
-                  ["overpaid", "Bayar lebih"],
-                ].map(([mode, label]) => (
+                  ["exact", "Bayar tepat", "Nominal sesuai + reference"],
+                  ["manual", "Transfer manual", "Pencocokan melalui nominal"],
+                  ["partial", "Bayar kurang", "Kurang 0.000001 token"],
+                  ["overpaid", "Bayar lebih", "Lebih 0.000001 token"],
+                ].map(([mode, label, description]) => (
                   <Button
                     key={mode}
+                    aria-label={label}
                     className={`${styles.button} ${styles.secondary}`}
                     disabled={!canPay}
                     onClick={() => void pay(mode!)}
                   >
-                    {label}
+                    <span>
+                      {label}
+                      <small>{description}</small>
+                    </span>
                   </Button>
                 ))}
               </div>
@@ -505,12 +548,42 @@ export default function Playground() {
           )}
         </Card>
       </div>
-      {view && (
-        <section className={styles.block}>
-          <h2 className="flex items-center gap-2">
-            <Activity size={17} className="text-primary" aria-hidden="true" />
-            3. Timeline transaksi &amp; webhook
-          </h2>
+      <section
+        className={`${styles.block} ${ui.results}`}
+        aria-label="Hasil pengujian"
+      >
+        <h2 className="flex items-center gap-2">
+          <Activity size={17} className="text-primary" aria-hidden="true" />
+          3. Timeline transaksi &amp; webhook
+        </h2>
+        <p>
+          Ikuti hasil dari server. Pembayaran selesai setelah transaksi
+          finalized dan status invoice diperbarui.
+        </p>
+        <div className={ui.resultSummary}>
+          <div>
+            <span>Transfer finalized</span>
+            <strong>{view?.transfers.length ?? 0}</strong>
+          </div>
+          <div>
+            <span>Event pembayaran</span>
+            <strong>{view?.events.length ?? 0}</strong>
+          </div>
+          <div>
+            <span>Signature webhook</span>
+            <strong>
+              {view?.receipts.some((r) => r.signature_verified)
+                ? "Terverifikasi"
+                : "Menunggu"}
+            </strong>
+          </div>
+        </div>
+        {!view ? (
+          <div className={ui.resultEmpty}>
+            Belum ada aktivitas. Buat invoice dan jalankan pembayaran untuk
+            melihat hasilnya di sini.
+          </div>
+        ) : (
           <ul className={styles.timeline}>
             {view.actions.map((a) => (
               <li key={a.request_id}>
@@ -557,8 +630,8 @@ export default function Playground() {
               </li>
             )}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
     </>
   );
 }

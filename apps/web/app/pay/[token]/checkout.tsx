@@ -12,10 +12,20 @@ import {
   Clock3,
   CircleAlert,
   ArrowUpRight,
+  Copy,
+  Wallet,
 } from "lucide-react";
 import styles from "./checkout.module.css";
 
 type Invoice = {
+  price_currency?: "USD";
+  price_amount?: string;
+  description?: string;
+  quote?: {
+    rate_usd_per_token: string;
+    converted_amount: string;
+    source: string;
+  };
   invoice_version?: number;
   payment_options?: { asset: "USDT" | "USDC"; amount: string }[];
   asset: "USDT" | "USDC";
@@ -54,13 +64,6 @@ export default function Checkout({ token }: { token: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const latestVersion = useRef(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 681px)");
-    const sync = () => setDetailsOpen(desktop.matches);
-    sync();
-    desktop.addEventListener("change", sync);
-    return () => desktop.removeEventListener("change", sync);
-  }, []);
   useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -253,285 +256,341 @@ export default function Checkout({ token }: { token: string }) {
                     : "Selesaikan pembayaran";
   return (
     <div className={styles.shell}>
-      <header className={styles.header}>
-        <Brand />
-        <span className={styles.network}>
-          SOLANA <i /> {invoice?.cluster ?? "Sandbox"}
-        </span>
-      </header>
-      <main className={styles.main}>
-        <div className={styles.context}>
-          <Badge variant="outline" className={styles.badge}>
-            {invoice?.cluster === "devnet" && invoice.asset === "USDT"
-              ? "DEVNET · MOCK USDT · TOKEN UJI"
-              : "SANDBOX · DANA TEST"}
-          </Badge>
-          <p>Pembayaran melalui Zekivo</p>
-          <h1>{title}</h1>
-          <p>
-            {invoice?.status === "paid"
-              ? "Transfer telah diverifikasi finalized. Merchant akan memproses pesanan melalui sistemnya."
-              : "Status pembayaran diverifikasi otomatis dari jaringan Solana."}
-          </p>
-        </div>
-        {invoice?.cluster === "devnet" && invoice.asset === "USDT" && (
-          <p className="mb-6 text-sm text-muted-foreground">
-            Gunakan mint Mock USDT yang tercantum di checkout. Token ini khusus
-            pengujian, bukan USDT asli dari Tether.
-          </p>
-        )}
-        <div className={styles.columns}>
-          <aside className={styles.summary}>
-            <span className={styles.caption}>RINCIAN PEMBAYARAN</span>
-            <h2>
-              {invoice ? invoice.payable_amount : "—"}{" "}
-              <span>
-                {invoice?.cluster === "devnet" && invoice.asset === "USDT"
-                  ? "Mock USDT"
-                  : invoice?.asset}
-              </span>
-            </h2>
-            <details
-              className={styles.breakdown}
-              open={detailsOpen}
-              onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
-            >
-              <summary>Rincian invoice</summary>
-              <dl>
-                <div>
-                  <dt>Jaringan</dt>
-                  <dd>Solana</dd>
-                </div>
-                <div>
-                  <dt>Aset invoice</dt>
-                  <dd>{invoice?.asset ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt>Nominal dasar</dt>
-                  <dd>{invoice?.amount ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt>Status server</dt>
-                  <dd>{invoice?.status ?? "—"}</dd>
-                </div>
-              </dl>
-              <p className={styles.hint}>
-                Nominal akhir memuat tambahan kecil untuk identifikasi
-                pembayaran. Kirim seluruh digit sesuai invoice.
+      <div className={styles.frame}>
+        <header className={styles.header}>
+          <Brand />
+          <span className={styles.network}>
+            <ShieldCheck size={14} aria-hidden="true" /> Pembayaran aman
+          </span>
+        </header>
+        <main className={styles.main}>
+          <div className={styles.columns}>
+            <aside className={styles.summary}>
+              <h2>Ringkasan pembayaran</h2>
+              <p className={styles.muted}>
+                {invoice?.description || "Pembayaran melalui Zekivo"}
               </p>
-            </details>
-            {canPay && (invoice?.payment_options?.length ?? 0) > 1 && (
-              <details className={styles.breakdown}>
-                <summary>Ganti aset pembayaran</summary>
-                <p className={styles.hint}>
-                  Sudah mengirim transfer? Jangan mengganti aset atau membayar
-                  lagi. Pilihan sebelumnya tetap dipantau sampai batas waktu
-                  invoice yang sama.
-                </p>
-                {invoice?.payment_options
-                  ?.filter((option) => option.asset !== invoice.asset)
-                  .map((option) => (
-                    <Button
-                      className={styles.assetButton}
-                      key={option.asset}
-                      onClick={() => void changeAsset(option.asset)}
-                    >
-                      Belum mengirim, gunakan {option.asset} · {option.amount}
-                    </Button>
-                  ))}
-              </details>
-            )}
-            {switching && (
-              <p role="status" className={styles.hint}>
-                Memperbarui pilihan aset…
-              </p>
-            )}
-            <div className={styles.safety}>
-              Gunakan {invoice?.asset ?? "token yang dipilih"} di jaringan
-              Solana. Token atau jaringan lain tidak melunasi invoice ini.
-            </div>
-          </aside>
-          <Card
-            role="region"
-            className={styles.card}
-            aria-label="Instruksi pembayaran"
-          >
-            <div className={styles.status}>
-              <span className={styles.dot} aria-hidden="true" />
-              <span role="status" aria-live="polite">
-                {connection === "offline"
-                  ? "Koneksi terputus · mencoba kembali otomatis"
-                  : connection === "missing"
-                    ? "Periksa kembali link checkout dari merchant."
-                    : connection === "loading"
-                      ? "Menghubungkan ke server…"
-                      : invoice?.status === "paid"
-                        ? "Terverifikasi · finalized"
-                        : review
-                          ? "Menunggu pemeriksaan operator"
-                          : invoice?.status === "confirming"
-                            ? "Menunggu konfirmasi jaringan"
-                            : !invoice?.payment_enabled
-                              ? "Penerimaan pembayaran belum aktif"
-                              : remaining === 0 || invoice.status === "expired"
-                                ? "Jangan kirim pembayaran baru"
-                                : "Menunggu pembayaran"}
-              </span>
-              {canPay && (
-                <span
-                  role="timer"
-                  aria-live="off"
-                  aria-label="Sisa waktu pembayaran"
-                >
-                  {Math.floor(remaining / 60)
-                    .toString()
-                    .padStart(2, "0")}
-                  :{(remaining % 60).toString().padStart(2, "0")}
-                </span>
+              {invoice?.price_currency === "USD" && (
+                <div className={styles.originalPrice}>
+                  <span>Harga pesanan</span>
+                  <strong>
+                    ${invoice.price_amount} <small>USD</small>
+                  </strong>
+                </div>
               )}
-            </div>
-            {canPay && invoice && (
-              <>
-                <div className={styles.qr}>
-                  {qr ? (
-                    <img
-                      src={qr}
-                      width={240}
-                      height={240}
-                      alt="QR pembayaran Solana Pay dengan nominal dan referensi invoice"
-                    />
-                  ) : (
-                    <p>
-                      {qrFailed
-                        ? "Gunakan link wallet atau transfer manual."
-                        : "Menyiapkan QR…"}
+              <details
+                className={styles.breakdown}
+                open={detailsOpen}
+                onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+              >
+                <summary>Rincian invoice</summary>
+                <dl>
+                  {invoice?.quote && (
+                    <div>
+                      <dt>Kurs saat invoice dibuat</dt>
+                      <dd>
+                        1 {invoice.asset} = ${invoice.quote.rate_usd_per_token}
+                      </dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt>Nominal dasar token</dt>
+                    <dd>
+                      {invoice?.amount ?? "—"} {invoice?.asset}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Jaringan</dt>
+                    <dd>Solana</dd>
+                  </div>
+                  <div>
+                    <dt>Aset invoice</dt>
+                    <dd>{invoice?.asset ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt>Status server</dt>
+                    <dd>{invoice?.status ?? "—"}</dd>
+                  </div>
+                </dl>
+                <p className={styles.hint}>
+                  Nominal akhir memuat kode unik. Kirim seluruh digit sesuai
+                  invoice.
+                </p>
+              </details>
+              <div className={styles.summaryTotal}>
+                <span>Total pembayaran</span>
+                <strong>
+                  {invoice?.payable_amount ?? "—"}{" "}
+                  <small>{invoice?.asset}</small>
+                </strong>
+              </div>
+              <div className={styles.summaryBottom}>
+                <ShieldCheck size={16} aria-hidden="true" />
+                <p>Status diperbarui otomatis setelah pembayaran diterima.</p>
+              </div>
+            </aside>
+            <Card
+              role="region"
+              className={styles.card}
+              aria-label="Instruksi pembayaran"
+            >
+              <div className={styles.cardHeading}>
+                <span className={styles.tokenMark} aria-hidden="true">
+                  {invoice?.asset === "USDT" ? (
+                    <img src="/tokens/usdt.svg" width={32} height={32} alt="" />
+                  ) : invoice?.asset === "USDC" ? (
+                    <img src="/tokens/usdc.svg" width={32} height={32} alt="" />
+                  ) : null}
+                </span>
+                <div>
+                  <p className={styles.eyebrow}>
+                    SOLANA · {invoice?.asset ?? "PAYMENT"}
+                  </p>
+                  <h1>{title}</h1>
+                </div>
+              </div>
+              {invoice && ["localnet", "devnet"].includes(invoice.cluster) && (
+                <Badge variant="outline" className={styles.badge}>
+                  {invoice.cluster === "devnet" && invoice.asset === "USDT"
+                    ? "DEVNET · MOCK USDT · TOKEN UJI"
+                    : `${invoice.cluster.toUpperCase()} · DANA TEST`}
+                </Badge>
+              )}
+              {canPay && invoice && (
+                <div className={styles.paymentBody}>
+                  <div className={styles.amount}>
+                    <span>Total token yang harus dibayar</span>
+                    <code>
+                      {invoice.payable_amount} {invoice.asset}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        void copy(invoice.payable_amount, "Nominal")
+                      }
+                    >
+                      <Copy size={13} aria-hidden="true" />
+                      Salin nominal
+                    </Button>
+                  </div>
+                  <div className={styles.qr}>
+                    {qr ? (
+                      <img
+                        src={qr}
+                        width={240}
+                        height={240}
+                        alt="QR pembayaran Solana Pay dengan nominal dan referensi invoice"
+                      />
+                    ) : (
+                      <p>
+                        {qrFailed
+                          ? "Gunakan link wallet atau transfer manual."
+                          : "Menyiapkan QR…"}
+                      </p>
+                    )}
+                  </div>
+                  <p className={styles.center}>Scan dengan wallet Solana Pay</p>
+                  <div className={styles.address}>
+                    <div className={styles.label}>
+                      Alamat penerima <span>Solana (SPL)</span>
+                    </div>
+                    <div className={styles.addressValue}>
+                      <code>{invoice.recipient}</code>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        aria-label="Salin alamat"
+                        onClick={() => void copy(invoice.recipient!, "Alamat")}
+                      >
+                        <Copy size={16} aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className={styles.safety}>
+                    Hanya {invoice.asset} di jaringan Solana. Kirim nominal
+                    persis.
+                  </div>
+                </div>
+              )}
+              {!canPay && invoice && (
+                <div className={styles.amount}>
+                  <span>Total pembayaran</span>
+                  <code>
+                    {invoice.payable_amount} {invoice.asset}
+                  </code>
+                </div>
+              )}
+              <div className={styles.status}>
+                <span className={styles.dot} aria-hidden="true" />
+                <span role="status" aria-live="polite">
+                  {switching
+                    ? "Memperbarui pilihan aset…"
+                    : connection === "offline"
+                      ? "Koneksi terputus · mencoba kembali otomatis"
+                      : connection === "missing"
+                        ? "Periksa kembali link checkout dari merchant."
+                        : connection === "loading"
+                          ? "Menghubungkan ke server…"
+                          : invoice?.status === "paid"
+                            ? "Terverifikasi · finalized"
+                            : review
+                              ? "Menunggu pemeriksaan operator"
+                              : invoice?.status === "confirming"
+                                ? "Menunggu konfirmasi jaringan"
+                                : !invoice?.payment_enabled
+                                  ? "Penerimaan pembayaran belum aktif"
+                                  : remaining === 0 ||
+                                      invoice.status === "expired"
+                                    ? "Jangan kirim pembayaran baru"
+                                    : "Menunggu pembayaran"}
+                </span>
+                {canPay && (
+                  <span
+                    role="timer"
+                    aria-live="off"
+                    aria-label="Sisa waktu pembayaran"
+                  >
+                    {Math.floor(remaining / 60)
+                      .toString()
+                      .padStart(2, "0")}
+                    :{(remaining % 60).toString().padStart(2, "0")}
+                  </span>
+                )}
+              </div>
+
+              {canPay && invoice && (
+                <>
+                  <Button asChild className={styles.primary}>
+                    <a href={paymentUrl} onClick={() => setWalletHelp(true)}>
+                      <Wallet size={16} aria-hidden="true" /> Buka wallet Solana
+                      Pay <ArrowUpRight size={15} aria-hidden="true" />
+                    </a>
+                  </Button>
+                  {walletHelp && (
+                    <p className={styles.hint} role="status">
+                      Wallet belum terbuka? Scan QR dari perangkat lain atau
+                      salin alamat dan nominal untuk transfer manual. Jangan
+                      kirim dua kali.
                     </p>
                   )}
-                </div>
-                <p className={styles.center}>
-                  Scan memakai wallet yang mendukung Solana Pay.
-                </p>
-                {invoice.cluster === "localnet" && (
-                  <p className={styles.local}>
-                    Localnet memerlukan wallet yang terhubung ke validator
-                    lokal. Wallet biasa tidak otomatis berpindah jaringan
-                    melalui QR.
-                  </p>
-                )}
-                <Button asChild className={styles.primary}>
-                  <a href={paymentUrl} onClick={() => setWalletHelp(true)}>
-                    Buka wallet Solana Pay{" "}
-                    <ArrowUpRight size={16} aria-hidden="true" />
-                  </a>
-                </Button>
-                {walletHelp && (
-                  <p className={styles.local} role="status">
-                    Wallet belum terbuka? Buka wallet yang mendukung Solana Pay,
-                    scan QR dari perangkat lain, atau gunakan transfer manual di
-                    bawah. Pastikan jaringan wallet sesuai; jangan kirim dua
-                    kali.
-                  </p>
-                )}
-                <div className={styles.divider}>
-                  atau transfer manual / exchange
-                </div>
-                <div className={styles.label}>
-                  Nominal persis{" "}
-                  <Button
-                    onClick={() => void copy(invoice.payable_amount, "Nominal")}
-                  >
-                    Salin nominal
-                  </Button>
-                </div>
-                <code className={styles.value}>
-                  {invoice.payable_amount} {invoice.asset}
-                </code>
-                <div className={styles.label}>
-                  Alamat penerima{" "}
-                  <Button
-                    onClick={() => void copy(invoice.recipient!, "Alamat")}
-                  >
-                    Salin alamat
-                  </Button>
-                </div>
-                <code className={styles.value}>{invoice.recipient}</code>
-                <details>
-                  <summary>Periksa mint token</summary>
-                  <code className={styles.value}>{invoice.mint}</code>
-                </details>
-                <p className={styles.hint}>
-                  Pastikan jumlah yang diterima persis setelah biaya penarikan
-                  exchange. Jangan membulatkan nominal atau mengirim ulang saat
-                  transfer sedang diproses.
-                </p>
-              </>
-            )}
-            {!invoice && (
-              <div className={styles.result}>
-                <div className={styles.symbol}>
-                  <Clock3 size={28} aria-hidden="true" />
-                </div>
-                <h2>
-                  {connection === "missing"
-                    ? "Link tidak tersedia"
-                    : connection === "offline"
-                      ? "Server belum dapat dihubungi"
-                      : "Menyiapkan checkout"}
-                </h2>
-                <p>
-                  {connection === "missing"
-                    ? "Minta link checkout yang benar dari merchant."
-                    : connection === "offline"
-                      ? "Periksa koneksi internet. Halaman akan mencoba kembali secara otomatis."
-                      : "Mohon tunggu, rincian pembayaran sedang dimuat."}
-                </p>
-              </div>
-            )}
-            {!canPay && invoice && (
-              <div className={styles.result}>
-                <div className={styles.symbol}>
-                  {invoice.status === "paid" ? (
-                    <Check size={30} aria-hidden="true" />
-                  ) : review ? (
-                    <CircleAlert size={28} aria-hidden="true" />
-                  ) : (
-                    <Clock3 size={28} aria-hidden="true" />
+                  <details className={styles.more}>
+                    <summary>Periksa mint token</summary>
+                    {invoice.cluster === "localnet" && (
+                      <p className={styles.hint}>
+                        Localnet memerlukan wallet yang terhubung ke validator
+                        lokal. QR tidak mengubah jaringan wallet.
+                      </p>
+                    )}
+                    {invoice.cluster === "devnet" &&
+                      invoice.asset === "USDT" && (
+                        <p className={styles.hint}>
+                          Mock USDT adalah token uji, bukan USDT asli dari
+                          Tether. Gunakan mint di bawah.
+                        </p>
+                      )}
+                    <code className={styles.value}>{invoice.mint}</code>
+                    <p className={styles.hint}>
+                      Untuk transfer dari exchange, jumlah yang diterima harus
+                      sesuai setelah biaya penarikan. Jangan membulatkan
+                      nominal.
+                    </p>
+                  </details>
+                  {canPay && (invoice.payment_options?.length ?? 0) > 1 && (
+                    <details className={styles.more}>
+                      <summary>Ganti aset pembayaran</summary>
+                      <p className={styles.hint}>
+                        Sudah mengirim? Jangan mengganti aset atau membayar
+                        lagi. Pilihan sebelumnya tetap dipantau sampai invoice
+                        berakhir.
+                      </p>
+                      {invoice.payment_options
+                        ?.filter((option) => option.asset !== invoice.asset)
+                        .map((option) => (
+                          <Button
+                            variant="secondary"
+                            className={styles.assetButton}
+                            key={option.asset}
+                            onClick={() => void changeAsset(option.asset)}
+                          >
+                            Belum mengirim, gunakan {option.asset} ·{" "}
+                            {option.amount}
+                          </Button>
+                        ))}
+                    </details>
                   )}
+                </>
+              )}
+              {!invoice && (
+                <div className={styles.result}>
+                  <div className={styles.symbol}>
+                    <Clock3 size={28} aria-hidden="true" />
+                  </div>
+                  <h2>
+                    {connection === "missing"
+                      ? "Link tidak tersedia"
+                      : connection === "offline"
+                        ? "Server belum dapat dihubungi"
+                        : "Menyiapkan checkout"}
+                  </h2>
+                  <p>
+                    {connection === "missing"
+                      ? "Minta link checkout yang benar dari merchant."
+                      : connection === "offline"
+                        ? "Periksa koneksi internet. Halaman akan mencoba kembali secara otomatis."
+                        : "Mohon tunggu, rincian pembayaran sedang dimuat."}
+                  </p>
                 </div>
-                <h2>{title}</h2>
-                {review && (
-                  <ul>
-                    {invoice.review_reasons.map((reason) => (
-                      <li key={reason}>
-                        {reasons[reason] ?? "Transfer membutuhkan pemeriksaan"}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p>
-                  {invoice.status === "paid"
-                    ? "Kamu dapat kembali ke halaman pesanan merchant untuk melihat proses berikutnya."
-                    : connection !== "connected"
-                      ? "Instruksi pembayaran akan tersedia kembali setelah status terbaru berhasil dimuat."
-                      : !invoice.payment_enabled
-                        ? "Invoice ini belum diaktifkan untuk menerima transfer."
-                        : "Jika sudah mengirim, simpan bukti transaksi dan hubungi merchant. Halaman ini tetap memeriksa status; jangan melakukan pembayaran kedua."}
+              )}
+              {!canPay && invoice && (
+                <div className={styles.result}>
+                  <div className={styles.symbol}>
+                    {invoice.status === "paid" ? (
+                      <Check size={30} aria-hidden="true" />
+                    ) : review ? (
+                      <CircleAlert size={28} aria-hidden="true" />
+                    ) : (
+                      <Clock3 size={28} aria-hidden="true" />
+                    )}
+                  </div>
+                  {review && (
+                    <ul>
+                      {invoice.review_reasons.map((reason) => (
+                        <li key={reason}>
+                          {reasons[reason] ??
+                            "Transfer membutuhkan pemeriksaan"}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p>
+                    {invoice.status === "paid"
+                      ? "Kamu dapat kembali ke halaman pesanan merchant untuk melihat proses berikutnya."
+                      : connection !== "connected"
+                        ? "Instruksi pembayaran akan tersedia kembali setelah status terbaru berhasil dimuat."
+                        : !invoice.payment_enabled
+                          ? "Invoice ini belum diaktifkan untuk menerima transfer."
+                          : "Jika sudah mengirim, simpan bukti transaksi dan hubungi merchant. Halaman ini tetap memeriksa status; jangan melakukan pembayaran kedua."}
+                  </p>
+                </div>
+              )}
+
+              {notice && (
+                <p className={styles.notice} role="status">
+                  {notice}
                 </p>
-              </div>
-            )}
-            <p className={styles.notice} role="status">
-              {notice}
-            </p>
-          </Card>
-        </div>
+              )}
+            </Card>
+          </div>
+        </main>
         <footer className={styles.footer}>
-          <span className="flex items-center gap-2">
-            <ShieldCheck size={14} aria-hidden="true" />
-            zekivo pay · Solana payments
+          <span>
+            <ShieldCheck size={13} aria-hidden="true" /> zekivo pay · Solana
+            payments
           </span>
           <span>Jangan bagikan link checkout ini.</span>
         </footer>
-      </main>
+      </div>
     </div>
   );
 }

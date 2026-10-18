@@ -964,3 +964,59 @@ OIDC, bukan callback/session operator selesai. Kedua invoice smoke tetap pending
 pada pembacaan ulang; transfer Devnet staging belum dilakukan. Worker/monitor
 started; error konfigurasi worker saat startup sebelum provision selesai tercatat
 sebagai kejadian awal, bukan bukti scanner sehat berkelanjutan.
+
+### Penyempurnaan playground lokal — 18 Oktober 2026
+
+Atas prioritas operator, UI/UX playground dirapikan sebelum integrasi staging
+berikutnya. Layout tiga tahap, form ringkas dengan pengaturan tambahan, nominal
+checkout menonjol, skenario pembayaran berdeskripsi, serta ringkasan transfer dan
+webhook selesai diterapkan di lokal. Source UI tersinkron dengan container untuk
+hot reload. Enam tes browser lintas ukuran dan satu alur localnet sampai paid /
+webhook verified lulus; rincian di UI-QA.md. Perubahan ini belum dideploy ke Azure.
+
+### Checkout pelanggan mengikuti referensi visual — 18 Oktober 2026
+
+Tema hitam/abu netral shadcn diterapkan khusus checkout. Desktop memakai ringkasan
+kiri dan panel nominal/alamat/QR kanan; mobile satu kolom. Detail teknis dilipat,
+nominal, countdown, status dan aksi wallet diprioritaskan. Seluruh 39 tes checkout
+lintas viewport lulus, termasuk QR/clipboard/keyboard/axe serta guard perubahan
+status dan aset. Referensi visual dan QA terbaru ada di CHECKOUT-QA.md. Perubahan
+masih lokal untuk ditinjau operator, belum diterapkan ke staging.
+
+### Harga pesanan USD dan quote token — rancangan 18 Oktober 2026
+
+Harga Zekivo dalam USD dipisahkan dari nominal USDT/USDC. Rancangan sumber harga,
+quote immutable, pembulatan decimal, kode unik terpisah, expiry/idempotency,
+pergantian aset dan draft JSON backend tersimpan di USD-PRICING-AND-QUOTES.md.
+Rekomendasi adapter awal CoinGecko Demo hanya untuk development/staging;
+commercial license/provider dan dampak budget menjadi gate sebelum live.
+Implementasi schema v2, adapter/cache, migrasi quote, checkout USD dan webhook
+versioned belum dikerjakan. API v1 tetap memakai nominal token saat ini.
+
+### Fondasi pricing CoinGecko dan cache — 18 Oktober 2026
+
+Adapter Demo, key server-side dari .env.devnet, JSON decimal lossless, konversi
+USD cents → enam desimal token, cache PostgreSQL on-demand 60 detik, advisory lock,
+cooldown dan counter budget bulanan selesai. Migration 017 diterapkan pada lokal,
+Devnet lokal dan test. CLI `pnpm pricing:inspect --devnet` berhasil mengambil batch
+USDT/USDC dan membaca ulang dari cache tanpa request tambahan. Seluruh 251 tes
+backend/31 file lulus (33 pricing), lint/TypeScript lulus. Detail PRICING.md.
+
+PostgreSQL dipertahankan untuk volume awal; Redis tidak ditambahkan saat ini.
+API v1 tetap nominal token. Schema v2, quote immutable/attempt, reservasi kode
+unik, checkout USD dan webhook versioned masih pekerjaan berikutnya. Tidak ada
+deployment pricing atau pemasangan key CoinGecko pada Azure pada tahap ini.
+
+### Harga asli USD di checkout dan playground — 18 Oktober 2026
+
+POST /v2/invoices, migration 018 dan penyimpanan harga USD/payload/snapshot quote
+atomik tersedia. V1 tetap memakai nominal token. Retry tidak mengambil kurs baru;
+quote per aset dan expiry dipertahankan. Checkout menampilkan harga asli USD dari
+payload server terpisah dari token yang harus dibayar, termasuk mobile.
+Playground mengirim USD dua desimal melalui helper ke v2, memakai fixture lokal.
+Webhook menyertakan field USD/quote opsional. Tes integrasi idempotency/pergantian
+aset/API dan browser USD lintas ukuran ditambahkan. Masih lokal; Azure tidak diubah.
+
+Verifikasi akhir USD lokal: 253 backend lulus; 3 browser checkout USD + 6 browser
+playground lulus. Alur mock localnet sampai paid dan webhook signature verified
+lulus; confirmed payload menyertakan harga asli USD dan kurs quote tersimpan.

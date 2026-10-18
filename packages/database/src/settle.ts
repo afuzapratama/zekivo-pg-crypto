@@ -121,6 +121,15 @@ export async function settleTransfer(
           occurred_at: new Date().toISOString(),
           project_id: invoice.project_id,
           data: {
+            ...(invoice.price_currency === "USD"
+              ? {
+                  price_currency: "USD",
+                  price_amount: invoice.price_amount,
+                  quote: (invoice.price_quotes as Record<string, unknown>)?.[
+                    String(invoice.attempt_asset)
+                  ],
+                }
+              : {}),
             invoice_id: invoice.id,
             invoice_version: updated.invoice_version,
             attempt_id: invoice.attempt_id,
@@ -178,6 +187,15 @@ export async function settleTransfer(
         occurred_at: new Date().toISOString(),
         project_id: invoice.project_id,
         data: {
+          ...(invoice.price_currency === "USD"
+            ? {
+                price_currency: "USD",
+                price_amount: invoice.price_amount,
+                quote: (invoice.price_quotes as Record<string, unknown>)?.[
+                  String(invoice.attempt_asset)
+                ],
+              }
+            : {}),
           invoice_id: invoice.id,
           invoice_version: updated.invoice_version,
           invoice_status: updated.status,

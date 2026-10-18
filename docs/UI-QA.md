@@ -49,3 +49,29 @@ Sembilan tes browser refund lulus pada desktop/mobile/320 px; 27 tes dashboard/
 project yang terdampak juga lulus. Typecheck/lint/format dan build web lulus.
 Bukti screenshot adalah fixture, bukan refund Devnet nyata:
 [desktop](qa/refund-desktop-fixture.png), [mobile](qa/refund-mobile-fixture.png).
+
+## Playground — 18 Oktober 2026
+
+Enam tes browser `tests/browser/playground.spec.ts --grep-invert @chain` lulus
+pada desktop 1440 px, mobile 390 px, dan narrow 320 px: generator, status payment,
+receipt signature, guard hostname, no overflow dan axe WCAG A/AA. Screenshot
+fixture desktop/mobile ditinjau. ESLint, TypeScript, Prettier dan diff check lulus.
+
+Satu tes integrasi localnet `--project desktop --grep 'entirely through local UI'`
+lulus: generate invoice → buka checkout → kirim mock token → finalized/paid pada
+checkout → webhook delivered/signature verified → reload mempertahankan bukti.
+Tes ini menggunakan validator lokal, bukan Devnet atau staging Azure.
+
+## Harga asli USD pada checkout/playground — 18 Oktober 2026
+
+Tiga tes browser baru (desktop/mobile/320 px) memverifikasi harga asli USD dan
+nominal token hasil konversi tampil terpisah, kurs dapat dibuka, tanpa overflow.
+Enam tes playground lulus dengan request USD v2; API key tetap hanya di server.
+Suite backend 253 tes/32 file lulus, termasuk persistence quote, retry tanpa
+provider, konflik payload, pilihan aset tanpa mengubah USD/expiry, autentikasi v2,
+dan penolakan payload USD oleh v1. ESLint, TypeScript dan format lulus.
+
+Alur localnet riil juga lulus: playground mengirim harga USD 2.00 → checkout
+menampilkan $2.00 → pembayaran mock finalized/paid → webhook delivered dengan
+signature verified → reload mempertahankan bukti. Pemeriksaan database confirmed
+event memuat price_currency=USD, price_amount=2.00 dan rate fixture tersimpan.

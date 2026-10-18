@@ -1,3 +1,4 @@
+import { loadPricingConfig } from "../../pricing/src/config.js";
 import { adminAuthConfig } from "../../auth/src/config.js";
 import { config as loadDotenv } from "dotenv";
 import { fileURLToPath } from "node:url";
@@ -50,6 +51,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     throw new Error("Staging scanner interval must be at least 5000ms");
   return {
     ...config,
+    PRICING:
+      env.PRICING_PROVIDER || config.APP_ENV === "local"
+        ? loadPricingConfig({
+            ...env,
+            APP_ENV: config.APP_ENV,
+            SOLANA_CLUSTER: config.SOLANA_CLUSTER,
+          })
+        : undefined,
     ADMIN_AUTH: adminAuthConfig({ ...env, WEB_ORIGIN: config.WEB_ORIGIN }),
   };
 }

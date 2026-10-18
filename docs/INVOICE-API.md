@@ -59,3 +59,40 @@ skip pada timestamp identik dan selisih mikrodetik, precision amount, pembatasan
 project/environment/cluster, cursor asing, key revoked, validasi query serta
 schema OpenAPI. Fixture memakai project test tersendiri dan dibersihkan setelah
 pengujian; pembayaran pengguna tidak direset.
+
+## Invoice USD (v2, localnet/Devnet)
+
+`POST /v2/invoices` memakai autentikasi project dan `Idempotency-Key` yang sama
+seperti v1. V1 tetap menerima nominal token. Contoh body v2:
+
+```json
+{
+  "order_id": "ZKV-123",
+  "price_currency": "USD",
+  "price_amount": "25.83",
+  "payment_asset": "USDT",
+  "allowed_payment_assets": ["USDT", "USDC"],
+  "network": "solana",
+  "expires_in_seconds": 900
+}
+```
+
+USD harus string dua desimal, positif. Durasi 60–900 detik; maksimum quote tidak
+memperpanjang masa invoice saat aset dipilih ulang. Gateway mengambil harga valid,
+menghitung token dengan pembulatan naik enam desimal dan mengalokasikan tambahan
+identifikasi. Original `price_currency`/`price_amount`, snapshot `quote` per aset,
+dan payload USD disimpan bersama invoice dalam transaksi yang sama.
+
+Response merchant dan checkout menampilkan harga USD terpisah dari `amount`
+(token sebelum kode unik) dan `payable_amount` (token persis yang harus dikirim).
+Retry mengembalikan invoice semula tanpa mengambil kurs baru; payload berbeda
+pada key sama konflik. Record quote lama tetap dipakai saat ganti aset, dengan
+batas waktu invoice yang sama. Aset di luar konfigurasi ditolak. Jika pricing
+belum dikonfigurasi/tidak tersedia, quote baru ditolak 503; invoice lama tetap bisa
+dibaca. Provider fixture hanya untuk localnet/testing. Detail adapter: PRICING.md.
+
+Event webhook invoice USD menambahkan `price_currency`, `price_amount` dan
+snapshot `quote` pada `data`, tanpa mengubah arti field token atau nomor schema
+v1 yang sudah ada. Consumer sebaiknya menerima field tambahan. Fulfillment tetap
+berdasarkan `payment.confirmed` signed dan idempotent, bukan jumlah USD dari
+browser atau redirect checkout. Dukungan ini belum dideploy ke Azure.
