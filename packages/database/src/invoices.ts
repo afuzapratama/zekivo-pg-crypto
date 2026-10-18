@@ -3,12 +3,28 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type pg from "pg";
 import type { InvoiceInput } from "../../contracts/src/invoices.js";
 import { parseAmount, formatAmount } from "../../domain/src/amount.js";
+import type { UsdContext, StoredQuote } from "../../pricing/src/invoices.js";
+import { validateSnapshot } from "../../pricing/src/provider.js";
 export class Conflict extends Error {}
 export function serializeInvoice(
   row: Record<string, unknown>,
   webOrigin: string,
 ) {
   return {
+    ...(row.price_currency === "USD"
+      ? {
+          price_currency: "USD",
+          price_amount: row.price_amount,
+          description: (row.price_request as { description?: string })
+            ?.description,
+          quote: {
+            ...(row.price_quotes as Record<string, StoredQuote>)?.[
+              String(row.asset)
+            ],
+            expires_at: row.expires_at,
+          },
+        }
+      : {}),
     id: row.id,
     invoice_version: row.invoice_version,
     order_id: row.order_id,
@@ -33,6 +49,7 @@ export async function createInvoice(
   key: string,
   input: InvoiceInput,
   enablePayments = false,
+  pricing?: UsdContext,
 ) {
   const base = parseAmount(input.amount);
   const options = (
@@ -57,19 +74,21 @@ export async function createInvoice(
     amount: base.toString(),
     expires_in_seconds: input.expires_in_seconds ?? 1800,
   };
-  const hash = createHash("sha256")
-    .update(
-      JSON.stringify([
-        normalized.order_id,
-        normalized.asset,
-        normalized.amount,
-        normalized.expires_in_seconds,
-        ...(options.length > 1
-          ? [options.map((option) => [option.asset, option.units.toString()])]
-          : []),
-      ]),
-    )
-    .digest("hex");
+  const hash =
+    pricing?.requestHash ??
+    createHash("sha256")
+      .update(
+        JSON.stringify([
+          normalized.order_id,
+          normalized.asset,
+          normalized.amount,
+          normalized.expires_in_seconds,
+          ...(options.length > 1
+            ? [options.map((option) => [option.asset, option.units.toString()])]
+            : []),
+        ]),
+      )
+      .digest("hex");
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -89,6 +108,7 @@ export async function createInvoice(
       await client.query("COMMIT");
       return { row: existing.rows[0], replayed: true };
     }
+    if (pricing) validateSnapshot(pricing.snapshot, Date.now(), 180);
     if (
       (
         await client.query(
@@ -191,6 +211,18 @@ export async function createInvoice(
           row.expires_at,
         ],
       );
+    }
+    if (pricing) {
+      const updated = await client.query(
+        "UPDATE invoices SET price_currency='USD',price_amount=$2,price_quotes=$3,price_request=$4 WHERE id=$1 RETURNING *",
+        [
+          row.id,
+          pricing.input.price_amount,
+          JSON.stringify(pricing.quotes),
+          JSON.stringify(pricing.input),
+        ],
+      );
+      Object.assign(row, updated.rows[0]);
     }
     await client.query("INSERT INTO idempotency_records VALUES($1,$2,$3,$4)", [
       projectId,

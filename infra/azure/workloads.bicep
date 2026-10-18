@@ -55,6 +55,10 @@ var specs = [
       common,
       [
         { name: 'ADMIN_AUTH_ENABLED', value: 'true' }
+        { name: 'PRICING_PROVIDER', value: 'coingecko-demo' }
+        { name: 'PRICING_CACHE_TTL_SECONDS', value: '60' }
+        { name: 'PRICING_MAX_AGE_SECONDS', value: '180' }
+        { name: 'PRICING_MONTHLY_BUDGET', value: '9000' }
         { name: 'ENTRA_TENANT_ID', value: entraTenantId }
         { name: 'ENTRA_CLIENT_ID', value: entraClientId }
       ]
@@ -66,6 +70,7 @@ var specs = [
       webhookSecret
       { name: 'entra-client-secret', env: 'ENTRA_CLIENT_SECRET' }
       { name: 'admin-allowed-identities', env: 'ADMIN_ALLOWED_IDENTITIES' }
+      { name: 'coingecko-demo-api-key', env: 'COINGECKO_DEMO_API_KEY' }
     ]
   }
   {

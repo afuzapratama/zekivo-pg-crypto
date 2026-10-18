@@ -8,6 +8,22 @@ const amount = z
   .string()
   .regex(/^(0|[1-9]\d{0,2})(\.\d{1,6})?$/)
   .refine((v) => Number(v) > 0);
+const usdInput = z
+  .object({
+    request_id: uuid,
+    order_id: z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/),
+    price_currency: z.literal("USD"),
+    price_amount: z.string().regex(/^(0|[1-9]\d{0,2})\.\d{2}$/),
+    payment_asset: z.enum(["USDT", "USDC"]),
+    allowed_payment_assets: z
+      .array(z.enum(["USDT", "USDC"]))
+      .min(1)
+      .max(2)
+      .optional(),
+    network: z.literal("solana"),
+    expires_in_seconds: z.number().int().min(60).max(900),
+  })
+  .strict();
 const invoiceInput = z
   .object({
     request_id: uuid,
@@ -101,14 +117,14 @@ export function buildPlayground(
     }
   });
   app.post("/invoices", async (req, reply) => {
-    const parsed = invoiceInput.safeParse(req.body);
+    const parsed = z.union([usdInput, invoiceInput]).safeParse(req.body);
     if (!parsed.success)
       return reply.code(400).send({ error: "invalid_invoice_input" });
     const { request_id, order_id, ...input } = parsed.data;
     try {
       await assertGateway();
       const invoice = await gateway(
-        "/v1/invoices",
+        "price_currency" in input ? "/v2/invoices" : "/v1/invoices",
         "POST",
         { ...input, order_id: `playground:${order_id}` },
         `playground:${request_id}`,

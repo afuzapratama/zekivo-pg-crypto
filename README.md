@@ -5,6 +5,8 @@ Fondasi gateway Solana USDT/USDC untuk website Zekivo. **Localnet aktif; USDC De
 - [Roadmap dan progres](docs/ROADMAP.md)
 - [Setup wallet Devnet via Phantom](docs/DEVNET.md#setup-wallet-operator-yang-tersedia) — `pnpm devnet:setup`, alat operator terpisah di http://localhost:4400; gateway utama masih localnet.
 - [Kontrak pembayaran](docs/PAYMENT-CONTRACT.md)
+- [Adapter harga dan cara uji cache](docs/PRICING.md) — `pnpm pricing:inspect --devnet`; belum mengubah invoice v1.
+- [Harga USD, sumber kurs dan draft integrasi Zekivo](docs/USD-PRICING-AND-QUOTES.md) — rancangan berikutnya; belum API aktif.
 - [Stack](docs/DEVELOPMENT-STACK.md)
 - [UI, shadcn/ui dan Scalar](docs/UI-DESIGN.md)
 - [Riset](docs/RESEARCH-USDT-GATEWAY.md)
@@ -21,6 +23,8 @@ pnpm local:up
 
 Web: http://localhost:3100. Panduan: http://localhost:3100/docs. Scalar API reference: http://localhost:3100/docs/api. Payment playground: http://localhost:3100/docs/playground. API health: http://localhost:4100/health. Readiness: http://localhost:4100/ready. OpenAPI: http://localhost:4100/openapi.json. Port database hanya bind localhost. Compose menunggu database sehat, lalu migration dan seed sebelum API/worker dimulai. Worker memantau dua akun token lokal dan menandai pembayaran setelah finalized. Solana RPC lokal: http://localhost:8899. Migration, seed project dan seed chain dijalankan sebelum API/worker.
 
+Untuk mengubah UI lokal, folder `apps/web/app`, `apps/web/components`, dan `apps/web/lib` dipasang langsung ke container web. Perubahan dari IDE muncul melalui hot reload; penambahan dependency tetap memerlukan rebuild image.
+
 Kredensial fixture **khusus lokal**: `zk_local_development_only`. Seed menolak environment selain local/localnet. Jangan gunakan fixture ini pada layanan publik.
 
 ```sh
@@ -32,6 +36,22 @@ curl -s http://localhost:4100/v1/invoices \
 ```
 
 Ulangi request yang sama untuk menerima invoice yang sama. Ganti body dengan idempotency key yang sama untuk memeriksa 409. Buka `checkout_url` dari response untuk melihat checkout sandbox. Gunakan CLI mock payment di bawah untuk membayar tanpa dana asli; halaman checkout memperbarui status otomatis. Panduan: [CHECKOUT.md](docs/CHECKOUT.md).
+
+## Rencana integrasi harga USD dari Zekivo
+
+Backend Zekivo nantinya mengirim harga pesanan USD (misalnya `"25.83"`). Gateway
+menghitung quote USDT/USDC, mengunci rate dan nominal token selama masa bayar,
+lalu menambahkan identifikasi unik yang dicatat terpisah. Webhook akan membawa
+nilai pesanan USD serta jumlah token diterima. Konversi ini tidak mencairkan token
+menjadi USD dan tidak menjamin hasil penukaran fiat.
+
+**API USD tersedia di lokal/Devnet melalui `POST /v2/invoices`.** API v1 di contoh sebelumnya tetap menerima `amount`
+dalam token. Draft JSON lengkap, response quote, alur retry/expiry, dan tahapan
+implementasi ada di [dokumen harga USD](docs/USD-PRICING-AND-QUOTES.md).
+Rekomendasi awal: CoinGecko Demo untuk development/staging nonkomersial; provider
+berlisensi komersial dan biaya tambahan ditinjau sebelum live. Belum ada pembelian
+paket. Adapter harga/cache dan konversi decimal sudah dapat diuji melalui
+`pnpm pricing:inspect --devnet`; key dibaca dari `.env.devnet`. Invoice USD menyimpan harga asli dan quote server; playground lokal sudah memakai input USD. Azure belum diperbarui. Lihat [panduan pricing](docs/PRICING.md).
 
 ## Development tanpa container aplikasi
 

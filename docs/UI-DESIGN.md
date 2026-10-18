@@ -42,3 +42,34 @@ penerimaan bruto dibedakan dari saldo wallet/health checkpoint. Badge status
 memakai warna sekaligus teks. Menu hanya menuju fitur tersedia; tidak ada tombol
 export/aksi placeholder atau grafik data fiktif. Seluruh data finansial tetap
 berasal dari API admin terotorisasi, dan receipt/ledger tidak berubah karena UI.
+
+## Playground lokal — 18 Oktober 2026
+
+Playground menampilkan tiga tahap berdasarkan bukti server: invoice tersedia,
+transfer finalized, dan receipt webhook dengan signature terverifikasi. Form
+utama berisi aset, nominal, dan quote tambahan; order ID serta expiry berada di
+pengaturan yang dapat dibuka. Checkout menonjolkan nominal persis dan status,
+dengan empat skenario pembayaran berdeskripsi. Ringkasan hasil tetap terlihat
+pada empty state; payload dan detail teknis dapat dibuka saat dibutuhkan.
+
+Layout memakai komponen shadcn yang ada dan CSS module khusus playground agar
+halaman dokumentasi lain tidak berubah. Desktop memakai dua kolom, layar kecil
+satu kolom. Retry pembuatan invoice hanya tampil ketika hasil belum pasti dan
+memakai request semula. Runner yang belum siap dicoba ulang otomatis; pembayaran
+tetap memerlukan status server, koneksi, masa berlaku, dan guard satu skenario.
+
+## Checkout pelanggan: tema hitam netral — 18 Oktober 2026
+
+Halaman `/pay/[token]` memakai palet zinc hitam/abu dan token shadcn yang hanya
+berlaku di checkout. Desktop mengikuti referensi operator: ringkasan pembayaran
+di kiri, nominal/alamat dan QR berdampingan di panel kanan. Mobile memakai satu
+kolom dengan QR lebih besar. Nominal persis, jaringan, countdown, status dan
+aksi salin/buka wallet menjadi informasi utama; mint dan panduan transfer ada
+dalam disclosure. Tidak menampilkan nama produk, merchant atau konversi fiat
+yang tidak tersedia dalam kontrak API. Penanda Localnet/Devnet tetap terlihat.
+
+Polling, URI Solana Pay, nominal unik, reference, guard expired/review/offline,
+dan pergantian aset tetap memakai data server. Status pergantian aset tampil
+sebelum instruksi pembayaran baru dimuat. Navigasi keyboard mengikuti urutan
+rincian invoice → salin nominal → salin alamat → buka wallet. Tema halaman lain
+belum diubah pada tahap ini.

@@ -156,3 +156,13 @@ mempertahankan paid walau review/expiry datang belakangan. Demo ini tetap sandbo
 validasi harga/order/aset/nominal terhadap pesanan backend Zekivo harus dilakukan
 pada integrasi merchant sesungguhnya sebelum staging end-to-end dianggap lulus.
 `payment.detected` menunggu observasi pre-finality; refund webhook belum tersedia.
+
+### Field tambahan invoice USD
+
+Invoice dari `/v2/invoices` menyertakan `data.price_currency` (`USD`),
+`data.price_amount` (harga asli pesanan, string dua desimal), dan `data.quote`
+(snapshot kurs/konversi sesuai aset attempt) pada confirmed, expired dan event
+review transfer. Field token `amount_expected`/`amount_received` tetap unit token.
+Ini penambahan opsional pada schema 1; event invoice v1 tetap sama. Harga pasar
+tidak dihitung ulang ketika transfer masuk. Jangan memperlakukan USD sebagai
+jaminan nilai pencairan fiat. Belum diterapkan pada deployment Azure.

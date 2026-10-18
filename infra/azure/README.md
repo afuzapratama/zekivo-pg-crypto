@@ -118,6 +118,7 @@ Source:
 | `notification-encryption-key` | Separate new staging 64-hex key, API/worker/monitor    |
 | `entra-client-secret`         | Dashboard Entra app, API only                          |
 | `admin-allowed-identities`    | JSON object UUID → role, API only                      |
+| `coingecko-demo-api-key`      | CoinGecko Demo pricing, staging API only               |
 
 All DSNs use `sslmode=verify-full`, percent-encoded credentials, and the Azure
 PostgreSQL FQDN (not a private IP). No secrets are created by Bicep from source
@@ -128,12 +129,19 @@ not needed. Its script is idempotent but rerunning changes role passwords.
 
 ## Remaining deployment work
 
-No live apply, initial secret upload, database bootstrap/provision, registry push,
-Azure OIDC pipeline or end-to-end cloud app validation has happened yet. External
-uptime, backup restore drill, role/project access decisions and failure/security
-matrix remain in `docs/STAGING-READINESS.md`. GitHub code integration can proceed
-independently; Azure deploy workflow will be added only after foundation outputs
-and GitHub environment/federated trust are configured and checked.
+Foundation, registry, database bootstrap/provision and initial workloads are already
+running in Azure staging. Subsequent releases use the migration job before updating
+workloads to an immutable image digest. Do not rerun bootstrap or replace staging
+credentials for an application update. Pricing requires `coingecko-demo-api-key` in
+Key Vault; only the API receives that secret and pricing configuration. The
+60-second cache is demand-driven and shared through PostgreSQL. The 9,000-call
+budget is per database/key, so monitor total account usage if local Devnet shares
+the same CoinGecko credential.
+
+GitHub CI validates releases; Azure deployment currently runs manually. Azure OIDC
+automatic deployment, external uptime, backup restore drill and remaining failure
+checks remain tracked in `docs/STAGING-READINESS.md`. Webhook delivery stays disabled
+until a staging receiver is configured and verified.
 
 The manual `provision` job initializes the dedicated `gateway_staging` database
 with the pinned USDC and Mock USDT Devnet accounts. Its explicit future-only

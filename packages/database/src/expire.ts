@@ -23,6 +23,15 @@ export async function expireInvoices(
         occurred_at: new Date().toISOString(),
         project_id: row.project_id,
         data: {
+          ...(row.price_currency === "USD"
+            ? {
+                price_currency: "USD",
+                price_amount: row.price_amount,
+                quote: (row.price_quotes as Record<string, unknown>)?.[
+                  String(row.asset)
+                ],
+              }
+            : {}),
           invoice_id: row.id,
           invoice_version: row.invoice_version,
           order_id: row.order_id,

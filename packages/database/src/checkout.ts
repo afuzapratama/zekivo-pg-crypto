@@ -21,6 +21,14 @@ export async function checkoutInvoice(
   if (!row) return null;
   const invoice = serializeInvoice(row, origin);
   return {
+    ...(invoice.price_currency
+      ? {
+          price_currency: invoice.price_currency,
+          price_amount: invoice.price_amount,
+          description: invoice.description,
+          quote: invoice.quote,
+        }
+      : {}),
     invoice_version: row.invoice_version,
     asset: invoice.asset,
     cluster: invoice.cluster,
