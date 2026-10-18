@@ -192,3 +192,5 @@ alat ini hanya membaca dan tidak mengirim/mencatat refund.
 Lihat [panduan refund](docs/REFUNDS.md).
 
 Staging Devnet tersedia di https://zkpgstg-web.nicebay-76e1d13a.southeastasia.azurecontainerapps.io. Status rilis dan pemeriksaan berikutnya: [kesiapan staging Devnet](docs/STAGING-READINESS.md). Mainnet/produksi menunggu arahan terpisah.
+
+Panduan serah terima backend Zekivo: [Instruksi integrasi staging](docs/ZEKIVO-STAGING-INTEGRATION.md), mencakup API USD, hosted checkout, signature webhook, idempotency, fulfillment dan acceptance test.
