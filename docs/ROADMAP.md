@@ -1020,3 +1020,27 @@ aset/API dan browser USD lintas ukuran ditambahkan. Masih lokal; Azure tidak diu
 Verifikasi akhir USD lokal: 253 backend lulus; 3 browser checkout USD + 6 browser
 playground lulus. Alur mock localnet sampai paid dan webhook signature verified
 lulus; confirmed payload menyertakan harga asli USD dan kurs quote tersimpan.
+
+### Azure staging USD checkout — 18 Oktober 2026
+
+- PR #9 merged ke `main` pada commit `2d0618d`; image dibangun dari tree
+  `6e3fcc2` yang identik dengan merge tersebut.
+- Image runtime: `gateway@sha256:f7bda4f920725f79cc71a75f47d20d079c1d13e6d35f3dc5fbad59256918ff5b`.
+- Migration job `zkpgstg-migrate-005isen` Succeeded; migration 017/018 diterapkan
+  sebelum rollout workload. Tidak ada bootstrap ulang atau reset database.
+- Web/API Healthy dengan trafik 100% ke revisi baru; worker/monitor Running
+  pada image yang sama. API readiness HTTP 200.
+- CoinGecko Demo key berada di Key Vault, hanya API yang diberi akses.
+  Cache PostgreSQL on-demand 60 detik; batas lokal database 9.000 request/bulan.
+- Smoke invoice v2 berhasil: harga asli USD `25.83`, rate USDC
+  `0.9997768446168809`, payable `25.835767 USDC` termasuk kode unik.
+  Retry dengan idempotency key sama mengembalikan invoice dan quote yang sama.
+  Request valid tanpa API key ditolak 401. Kedua SVG token HTTP 200.
+- Browser staging: harga asli USD dan ikon USDC terlihat pada viewport 1440,
+  390 dan 320 px tanpa horizontal overflow.
+- CI rilis: 253 tes backend dan 51 tes browser lulus; 81 pengujian fixture admin
+  atau chain yang tidak diaktifkan di CI dilewati. Bicep compile lulus.
+- Tetap staging Solana Devnet. Tidak ada transfer dana saat smoke rilis ini.
+  Webhook delivery eksternal tetap nonaktif; Azure OIDC deploy otomatis,
+  pembayaran Devnet dari wallet operator dan pengujian integrasi eksternal
+  tetap pekerjaan berikutnya.

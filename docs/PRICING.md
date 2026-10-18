@@ -106,4 +106,4 @@ unik → create invoice/idempotency → checkout USD/token → webhook versioned
 Cache harga ini tidak menggantikan snapshot quote: TTL cache 60 detik dan masa
 berlaku quote pembayaran adalah dua hal berbeda. Belum membeli paket provider.
 
-Pembaruan: quote invoice USD, harga asli dan pilihan aset kini tersimpan melalui migration 018. Checkout dan playground lokal menggunakan kontrak tersebut; lihat INVOICE-API.md. Azure tetap belum diperbarui.
+Pembaruan: quote invoice USD, harga asli dan pilihan aset kini tersimpan melalui migration 018. Checkout dan playground lokal menggunakan kontrak tersebut; lihat INVOICE-API.md. Azure staging sudah diperbarui pada 18 Oktober 2026; API memakai CoinGecko Demo melalui Key Vault. Migrasi 017/018 dan smoke invoice USD lulus. Rincian rilis ada di ROADMAP.md.

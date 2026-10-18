@@ -145,6 +145,7 @@ Rincian deployment dan pengujian yang masih menunggu ada di
 [ROADMAP.md](ROADMAP.md#azure-staging-mulai-diterapkan--17-oktober-2026).
 
 URL staging (Devnet saja):
+
 - Web: https://zkpgstg-web.nicebay-76e1d13a.southeastasia.azurecontainerapps.io
 - API: https://zkpgstg-api.nicebay-76e1d13a.southeastasia.azurecontainerapps.io
 
@@ -157,3 +158,12 @@ Web dan API revision Healthy; HTTPS login HTTP 200 diverifikasi dengan Chromium.
 Dashboard tanpa sesi redirect ke login, admin API menolak anonymous 401. Awal login
 Microsoft lewat web mengembalikan 303 ke Microsoft dan cookie Secure; operator
 masih perlu menyelesaikan login nyata untuk memverifikasi callback/sesi/allowlist.
+
+### Pembaruan 18 Oktober 2026
+
+PR #9 (`2d0618d`) sudah diterapkan ke staging setelah CI lulus. Migration job
+017/018 Succeeded; checkout light, ikon USDT/USDC dan invoice USD v2 tersedia.
+API menggunakan CoinGecko Demo dengan secret Key Vault khusus API dan cache
+PostgreSQL. Invoice USD dan replay idempotency diverifikasi di URL publik;
+smoke tidak mengirim dana. Lihat catatan rilis di ROADMAP.md untuk image digest.
+Azure deployment masih manual; CI GitHub belum melakukan deploy otomatis.
