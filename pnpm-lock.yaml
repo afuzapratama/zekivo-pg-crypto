@@ -197,8 +197,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       nodemailer:
-        specifier: ^10.1.1
-        version: 10.1.1
+        specifier: ^10.1.7
+        version: 10.1.7
       openid-client:
         specifier: ^6.8.8
         version: 6.8.8
@@ -3156,8 +3156,8 @@ packages:
       sass:
         optional: true
 
-  nodemailer@10.1.1:
-    resolution: {integrity: sha512-pbqZRoeYUO+1E8TJ/11WeY4D2EVujj1hsYjz3qff/vUFDtGnmi7p3iqzTFslYOfQ6PnjVcWxx/CIUSHCSrO/QA==}
+  nodemailer@10.1.7:
+    resolution: {integrity: sha512-OQa6FDln5fLttmqSbjDiRYvFDOFNrBqfiOwHPlEbURil3b+vPB1v8xpi+Sp46drzNDlsTnNsS502vthmz56r4w==}
     engines: {node: '>=20.0.0'}
 
   oauth4webapi@3.8.8:
@@ -7084,7 +7084,7 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  nodemailer@10.1.1: {}
+  nodemailer@10.1.7: {}
 
   oauth4webapi@3.8.8: {}
 
