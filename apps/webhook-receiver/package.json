@@ -7,6 +7,6 @@
     "build": "esbuild src/main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/main.js"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.28.2"
   }
 }
